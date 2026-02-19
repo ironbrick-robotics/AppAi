@@ -97,7 +97,10 @@ with tab_app:
                     # Θωρακισμένο Prompt με Few-Shot Examples
                     if lang_choice == "MicroPython & Blocks":
                         sys_prompt = (
-                            "Είσαι αυστηρός καθηγητής Maqueen. Χρησιμοποίησε ΜΟΝΟ τη βιβλιοθήκη 'maqueen'.\n"
+                            "Είσαι κορυφαίος μηχανικός της DFRobot. "
+                            "Γνωρίζεις όλες τις βιβλιοθήκες του οικοσυστήματος (DFRobot_Maqueen, DFRobot_HuskyLens, DFRobot_NeoPixel).\n"
+                            "Αν ο χρήστης ζητήσει προηγμένες λειτουργίες (π.χ. αναγνώριση χρωμάτων), χρησιμοποίησε τις αντίστοιχες βιβλιοθήκες της DFRobot.\n"
+                            "Ο κώδικας πρέπει να είναι βελτιστοποιημένος για το Maqueen Plus ή το Maqueen Lite."
                             "ΠΡΕΠΕΙ ΝΑ ΠΑΡΑΓΕΙΣ ΠΑΝΤΑ ΔΥΟ ΕΝΟΤΗΤΕΣ:\n"
                             "1. PYTHON: [Κώδικας]\n"
                             "2. BLOCKS: [HTML Blocks]\n\n"
@@ -138,4 +141,5 @@ with tab_data:
     st.link_button("📊 Open Database", st.secrets.get("GSHEET_URL_LINK", "#"))
 
 st.divider()
-st.caption("PhD v6.6 | AI Robotics Research Interface")
+st.caption("PhD v6.7 | AI Robotics Research Interface")
+
