@@ -4,7 +4,7 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="Maqueen Lab", page_icon="🤖", layout="wide", anchor=False)
+st.set_page_config(page_title="Maqueen Lab", page_icon="🤖", layout="wide")
 
 # 2. Σύνδεση με Groq & SheetDB
 try:
@@ -98,6 +98,7 @@ with col_output:
 
 st.divider()
 st.caption("AI STEM Lab v4.2 | Maqueen side-by-side Edition")
+
 
 
 
