@@ -5,9 +5,8 @@ import datetime
 # 1. Ρύθμιση Σελίδας
 st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖", layout="wide")
 
-# 2. Σύνδεση με το API της Groq (Συμβατό με OpenAI format)
+# 2. Σύνδεση με το API της Groq
 try:
-    # Λήψη API Key από τα Secrets του Streamlit Cloud
     api_key_secret = st.secrets["GROQ_API_KEY"]
     client = OpenAI(
         base_url="https://api.groq.com/openai/v1",
@@ -17,7 +16,7 @@ except Exception as e:
     st.error("❌ Το API Key (GROQ_API_KEY) δεν βρέθηκε στα Secrets!")
     st.stop()
 
-# 3. Sidebar - Διαχείριση για τον Καθηγητή
+# 3. Sidebar - Διαχείριση Admin
 st.sidebar.title("⚙️ Διαχείριση Admin")
 if st.sidebar.checkbox("Εμφάνιση Επιλογών Κατεβάσματος"):
     try:
@@ -31,40 +30,36 @@ if st.sidebar.checkbox("Εμφάνιση Επιλογών Κατεβάσματο
     except FileNotFoundError:
         st.sidebar.warning("Δεν υπάρχουν ακόμα καταγραφές.")
 
-# 4. Κύριο Περιβάλλον Μαθητή
+# 4. Περιβάλλον Μαθητή
 st.title("🤖 Maqueen Micro:bit AI Assistant")
 st.info("Περίγραψε τι θέλεις να κάνει το ρομπότ Maqueen και πάρε τον κώδικα σε Python!")
 
 student_id = st.text_input("ID Μαθητή:", "Guest")
-user_prompt = st.text_area("Περίγραψε την αποστολή (π.χ. 'Αποφυγή εμποδίων με υπερήχους'):")
+user_prompt = st.text_area("Περίγραψε την αποστολή (π.χ. 'Αποφυγή εμποδίων'):")
 
-# 5. Εκτέλεση και Παραγωγή Κώδικα
+# 5. Εκτέλεση
 if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
     if user_prompt:
         with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
             try:
-                # Κλήση του Llama 3 με System Prompt για Maqueen
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
                         {
                             "role": "system", 
-                            "content": (
-                                "Είσαι ένας έμπειρος καθηγητής ρομποτικής Maqueen. "
-                                "Απαντάς πάντα στα Ελληνικά. "
-                                "Δίνεις πάντα ολόκληρο τον κώδικα MicroPython για το Micro:bit. "
-                                "Χρησιμοποίησε σωστές βιβλιοθήκες και pins για το Maqueen. "
-                                "Εξήγησε αναλυτικά τι κάνει κάθε τμήμα του κώδικα."
-                            )
+                            "content": "Είσαι ειδικός καθηγητής Maqueen. Απαντάς στα Ελληνικά και δίνεις πάντα ολόκληρο τον κώδικα MicroPython."
                         },
                         {"role": "user", "content": user_prompt}
                     ]
                 )
                 
                 answer = response.choices[0].message.content
-                
-                # Εμφάνιση Αποτελέσματος στην οθόνη
-                st.subheader("📝 Ο Κώδικας Python:")
+                st.subheader("📝 Ο Κώδικας σου:")
                 st.markdown(answer)
                 
-                # 6. Απο
+                # 6. Αποθήκευση ΟΛΟΚΛΗΡΗΣ της απάντησης (Διορθωμένο Syntax)
+                try:
+                    with open("research_logs.txt", "a", encoding="utf-8") as f:
+                        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        f.write(f"TS: {ts} | ID: {student_id}\n")
+                        f.write(f"PROMPT: {user_prompt}\n")
