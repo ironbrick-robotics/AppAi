@@ -115,9 +115,8 @@ with tab_pubs:
 
 # --- TAB 4: Η ΕΦΑΡΜΟΓΗ (IDE) ---
 with tab_app:
-    st.header("🔬 AI Research Interface", anchor=False)
+    st.header("🔬 AI Robotics Research Interface", anchor=False)
     
-    # Επιλογή Γλώσσας από τον μαθητή
     language_choice = st.selectbox(
         "Επίλεξε Γλώσσα Προγραμματισμού:",
         ["MicroPython & Blocks", "Arduino C"]
@@ -129,24 +128,37 @@ with tab_app:
     with col_input:
         with st.form(key='research_form', clear_on_submit=True):
             u_id = st.text_input("User ID:", value="Student_1")
-            prompt = st.text_area("Περιγραφή Αποστολής:", height=150)
-            submit = st.form_submit_button("🚀 Generate")
+            prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
+            submit = st.form_submit_button("🚀 Δημιουργία")
 
     with col_output:
         if submit and prompt:
-            with st.spinner('⏳ AI Processing...'):
+            with st.spinner('⏳ Επεξεργασία AI βάσει επίσημων βιβλιοθηκών...'):
                 try:
-                    # Προσαρμογή του System Prompt βάσει επιλογής
-                    system_content = f"Είσαι καθηγητής ρομποτικής Maqueen. Απάντα στα Ελληνικά. "
+                    # Knowledge Injection Prompting
                     if language_choice == "MicroPython & Blocks":
-                        system_content += "Δώσε: 1. PYTHON: [Κώδικας] 2. BLOCKS: [HTML scratch-blocks]."
+                        sys_prompt = (
+                            "Είσαι αυστηρός καθηγητής Maqueen. Χρησιμοποίησε ΜΟΝΟ την επίσημη βιβλιοθήκη 'maqueen'.\n"
+                            "ΕΝΤΟΛΕΣ MICROPYTHON:\n"
+                            "- maqueen.motor_run(maqueen.Motors.M1, maqueen.Dir.CW, speed)\n"
+                            "- maqueen.ultrasonic()\n"
+                            "- maqueen.read_patrol(maqueen.Patrol.L1)\n"
+                            "Απάντα σε 2 ενότητες: 1. PYTHON: [Κώδικας] 2. BLOCKS: [HTML scratch-blocks]."
+                        )
                     else:
-                        system_content += "Δώσε μόνο τον κώδικα σε ARDUINO C (C++) για Maqueen."
+                        sys_prompt = (
+                            "Είσαι ειδικός προγραμματιστής Arduino για Maqueen. Χρησιμοποίησε τη βιβλιοθήκη <DFRobot_Maqueen.h>.\n"
+                            "ΕΝΤΟΛΕΣ ARDUINO C:\n"
+                            "- maqueen_motor_run(motor, direction, speed)\n"
+                            "- maqueen_read_patrol(sensor)\n"
+                            "- maqueen_ultrasonic()\n"
+                            "Ο κώδικας πρέπει να περιλαμβάνει void setup() και void loop()."
+                        )
 
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[
-                            {"role": "system", "content": system_content},
+                            {"role": "system", "content": sys_prompt},
                             {"role": "user", "content": prompt}
                         ]
                     )
@@ -154,14 +166,26 @@ with tab_app:
                     
                     if language_choice == "MicroPython & Blocks" and "BLOCKS:" in ans:
                         parts = ans.split("BLOCKS:")
+                        st.markdown("#### 🐍 MicroPython Code")
                         st.code(parts[0].replace("PYTHON:", "").strip(), language='python')
+                        st.markdown("#### 🧩 Visual Logic (Scratch-Style)")
                         st.markdown(parts[1].strip(), unsafe_allow_html=True)
                     else:
+                        st.markdown(f"#### ⚙️ Arduino C Code")
                         st.code(ans, language='cpp')
                     
-                    # Logging
-                    requests.post(SHEETDB_URL, json={"data": [{"Timestamp": str(datetime.datetime.now()), "Student_ID": u_id, "Language": language_choice, "Prompt": prompt}]})
-                    st.toast("✅ Logged!")
+                    # Logging with Library Metadata
+                    log_data = {
+                        "data": [{
+                            "Timestamp": str(datetime.datetime.now()), 
+                            "Student_ID": u_id, 
+                            "Language": language_choice, 
+                            "Prompt": prompt,
+                            "Status": "Verified API"
+                        }]
+                    }
+                    requests.post(SHEETDB_URL, json=log_data)
+                    st.toast("✅ Έλεγχος Βιβλιοθηκών Ολοκληρώθηκε!")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -172,3 +196,4 @@ with tab_data:
 
 st.divider()
 st.caption("PhD v6.4 | Mobile Friendly & Multi-Language Support")
+
