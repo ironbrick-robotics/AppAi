@@ -6,10 +6,17 @@ import requests
 # 1. Ρύθμιση Σελίδας
 st.set_page_config(page_title="Maqueen Robotics Portal", page_icon="🤖", layout="wide")
 
-# CSS για "καθαρό" interface: Εξαφανίζει τους συνδετήρες (anchors) και ομορφαίνει τα Tabs
+# --- CSS ΓΙΑ ΠΛΗΡΗ ΚΑΘΑΡΙΣΜΟ ΤΟΥ INTERFACE ---
 st.markdown("""
     <style>
-    /* Εξαφάνιση του συμβόλου του συνδετήρα δίπλα από τίτλους */
+    /* Εξαφάνιση της πάνω μπάρας (Share, Star, GitHub, Fork) */
+    header {visibility: hidden;}
+    
+    /* Εξαφάνιση του μενού κάτω δεξιά (Manage app / Made with Streamlit) */
+    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    
+    /* Εξαφάνιση των συνδετήρων (anchors) δίπλα από τους τίτλους */
     .stApp a.header-anchor { display: none; }
     
     /* Ρυθμίσεις για τα Tabs */
@@ -19,6 +26,9 @@ st.markdown("""
         font-size: 18px; 
         font-weight: 600;
     }
+    
+    /* Απόκρυψη του κουμπιού 'Deploy' αν εμφανίζεται */
+    .stDeployButton {display:none;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -32,23 +42,21 @@ except Exception as e:
     st.stop()
 
 # 3. Δημιουργία Μενού με Tabs
-# Το App είναι η τελευταία καρτέλα, τα άλλα είναι απλό κείμενο
 tab1, tab2, tab3, app_tab = st.tabs(["📑 Tab 1", "📊 Tab 2", "⚙️ Tab 3", "🚀 App"])
 
 with tab1:
     st.header("Ενότητα 1", anchor=False)
-    st.write("Καλώς ήρθατε στην πρώτη σελίδα. Εδώ μπορείτε να βάλετε θεωρία ή οδηγίες.")
+    st.write("Καλώς ήρθατε στην πρώτη σελίδα.")
 
 with tab2:
     st.header("Ενότητα 2", anchor=False)
-    st.write("Αυτή η σελίδα προορίζεται για στατιστικά ή επιπλέον υλικό.")
+    st.write("Σελίδα στατιστικών και πληροφοριών.")
 
 with tab3:
     st.header("Ενότητα 3", anchor=False)
-    st.write("Εδώ μπορείτε να προσθέσετε πληροφορίες για τις ρυθμίσεις του Maqueen.")
+    st.write("Πληροφορίες ρυθμίσεων.")
 
 with app_tab:
-    # Εδώ τρέχει η εφαρμογή μας
     st.header("🤖 Maqueen Robotics IDE", anchor=False)
     st.divider()
 
@@ -57,7 +65,6 @@ with app_tab:
 
     with col_input:
         st.subheader("📥 Είσοδος Μαθητή", anchor=False)
-        # Φόρμα για Enter support και αυτόματο καθάρισμα
         with st.form(key='maqueen_form', clear_on_submit=True):
             student_id = st.text_input("ID Μαθητή:", value="Guest")
             user_prompt = st.text_area("Περιγράψτε την αποστολή του Maqueen:", height=200)
@@ -70,7 +77,6 @@ with app_tab:
             if user_prompt:
                 with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
                     try:
-                        # Κλήση AI
                         response = client.chat.completions.create(
                             model="llama-3.3-70b-versatile",
                             messages=[
@@ -84,7 +90,6 @@ with app_tab:
                         )
                         full_answer = response.choices[0].message.content
                         
-                        # Διαχωρισμός Κύριας και Εναλλακτικής Λύσης
                         if "---ΕΝΑΛΛΑΚΤΙΚΟΣ---" in full_answer:
                             parts = full_answer.split("---ΕΝΑΛΛΑΚΤΙΚΟΣ---")
                             main_code = parts[0]
@@ -93,16 +98,13 @@ with app_tab:
                             main_code = full_answer
                             alt_code = None
 
-                        # Εμφάνιση Κύριας Λύσης
                         st.markdown("### 🔴 Προτεινόμενη Λύση")
                         st.info(main_code)
                         
-                        # Εμφάνιση Εναλλακτικής Λύσης (μπλε πλαίσιο)
                         if alt_code and alt_code.strip():
                             st.markdown("### 🔵 Εναλλακτική Προσέγγιση")
                             st.success(alt_code)
 
-                        # ΑΠΟΘΗΚΕΥΣΗ ΜΕΣΩ SHEETDB (Μόνο στο Cloud, τίποτα στην οθόνη)
                         data_to_send = {
                             "data": [{
                                 "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -117,9 +119,9 @@ with app_tab:
                     except Exception as e:
                         st.error(f"❌ Σφάλμα: {e}")
             else:
-                st.warning("⚠️ Παρακαλώ γράψτε μια αποστολή.")
+                st.warning("⚠️ Παρακαλώ γράψε μια αποστολή.")
         else:
-            st.write("Περιμένω την ερώτησή σας στην καρτέλα 'App'.")
+            st.write("Περιμένω την ερώτησή σας.")
 
 st.divider()
-st.caption("AI STEM Lab v5.0 | Professional Portal Edition")
+st.caption("AI STEM Lab v5.1 | Private Portal Edition")
