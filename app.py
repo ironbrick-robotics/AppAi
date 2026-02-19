@@ -1,18 +1,20 @@
 import streamlit as st
-import google.generativeai as genai # Χρήση της πιο σταθερής βιβλιοθήκης
+from openai import OpenAI # Θα χρησιμοποιήσουμε το format της OpenAI
 import datetime
 
 # Ρύθμιση σελίδας
 st.set_page_config(page_title="AI STEM Lab", page_icon="🤖")
 
-# --- ΣΥΝΔΕΣΗ ΜΕ ΤΟ API ---
+# --- ΣΥΝΔΕΣΗ ΜΕ GROQ (ΔΩΡΕΑΝ & ΣΥΜΒΑΤΟ ΜΕ OPENAI) ---
 try:
-    api_key_secret = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key_secret)
-    # Χρησιμοποιούμε το 1.5 Flash που είναι το πιο σίγουρο για Free Tier
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    api_key = st.secrets["GROQ_API_KEY"]
+    # Σύνδεση με τον server της Groq
+    client = OpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=api_key
+    )
 except Exception as e:
-    st.error(f"❌ Πρόβλημα στις ρυθμίσεις: {e}")
+    st.error("❌ Λείπει το GROQ_API_KEY από τα Secrets!")
     st.stop()
 
 st.title("🤖 AI STEM Lab: Robotics Assistant")
@@ -22,26 +24,26 @@ user_prompt = st.text_area("Γράψε το ερώτημά σου για το ρ
 
 if st.button("Εκτέλεση και Καταγραφή"):
     if user_prompt:
-        with st.spinner('⏳ Το AI σκέφτεται...'):
+        with st.spinner('⏳ Το AI (Llama 3) σκέφτεται...'):
             try:
-                # Άμεση κλήση χωρίς περιττά περιτυλίγματα
-                response = model.generate_content(user_prompt)
+                # Κλήση μοντέλου Llama 3 (ταχύτατο και δωρεάν)
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": user_prompt}]
+                )
                 
-                if response.text:
-                    st.subheader("🤖 Απάντηση:")
-                    st.markdown(response.text)
-                    
-                    # Καταγραφή
-                    try:
-                        with open("research_logs.txt", "a", encoding="utf-8") as f:
-                            ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                            f.write(f"{ts} | {student_id} | {user_prompt} | {response.text[:100]}...\n")
-                        st.success("✅ Καταγράφηκε!")
-                    except:
-                        pass
-                else:
-                    st.error("⚠️ Το AI δεν έδωσε απάντηση.")
+                answer = response.choices[0].message.content
+                
+                st.subheader("🤖 Απάντηση:")
+                st.markdown(answer)
+                
+                # Καταγραφή
+                with open("research_logs.txt", "a", encoding="utf-8") as f:
+                    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"{ts} | {student_id} | {user_prompt} | {answer[:50]}...\n")
+                st.success("✅ Καταγράφηκε!")
+                
             except Exception as e:
-                st.error(f"❌ Νέο Σφάλμα: {e}")
+                st.error(f"❌ Σφάλμα: {e}")
     else:
-        st.warning("⚠️ Γράψε μια ερώτηση!")
+        st.warning("⚠️ Γράψε κάτι!")
