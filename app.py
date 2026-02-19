@@ -7,16 +7,17 @@ st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖", layout="
 
 # 2. Σύνδεση με το API της Groq
 try:
+    # Τραβάει το κλειδί από το Settings -> Secrets του Streamlit Cloud
     api_key_secret = st.secrets["GROQ_API_KEY"]
     client = OpenAI(
         base_url="https://api.groq.com/openai/v1",
         api_key=api_key_secret
     )
 except Exception as e:
-    st.error("❌ Το API Key (GROQ_API_KEY) δεν βρέθηκε στα Secrets!")
+    st.error("❌ Το API Key (GROQ_API_KEY) δεν βρέθηκε στα Secrets του Streamlit Cloud!")
     st.stop()
 
-# 3. Sidebar - Διαχείριση Admin
+# 3. Sidebar - Διαχείριση για τον Καθηγητή
 st.sidebar.title("⚙️ Διαχείριση Admin")
 if st.sidebar.checkbox("Εμφάνιση Επιλογών Κατεβάσματος"):
     try:
@@ -30,14 +31,14 @@ if st.sidebar.checkbox("Εμφάνιση Επιλογών Κατεβάσματο
     except FileNotFoundError:
         st.sidebar.warning("Δεν υπάρχουν ακόμα καταγραφές.")
 
-# 4. Περιβάλλον Μαθητή
+# 4. Κύριο Περιβάλλον Μαθητή
 st.title("🤖 Maqueen Micro:bit AI Assistant")
-st.info("Περίγραψε τι θέλεις να κάνει το ρομπότ Maqueen και πάρε τον κώδικα σε Python!")
+st.info("Γράψε τι θέλεις να κάνει το ρομπότ Maqueen και θα λάβεις τον κώδικα σε Python!")
 
 student_id = st.text_input("ID Μαθητή:", "Guest")
-user_prompt = st.text_area("Περίγραψε την αποστολή (π.χ. 'Αποφυγή εμποδίων'):")
+user_prompt = st.text_area("Περίγραψε την αποστολή (π.χ. 'Αποφυγή εμποδίων με υπερήχους'):")
 
-# 5. Εκτέλεση
+# 5. Εκτέλεση και Παραγωγή Κώδικα
 if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
     if user_prompt:
         with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
@@ -47,7 +48,11 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                     messages=[
                         {
                             "role": "system", 
-                            "content": "Είσαι ειδικός καθηγητής Maqueen. Απαντάς στα Ελληνικά και δίνεις πάντα ολόκληρο τον κώδικα MicroPython."
+                            "content": (
+                                "Είσαι ειδικός καθηγητής ρομποτικής Maqueen. "
+                                "Απαντάς στα Ελληνικά. Δίνεις πάντα κώδικα MicroPython για Micro:bit. "
+                                "Εξήγησε σύντομα τι κάνει ο κώδικας."
+                            )
                         },
                         {"role": "user", "content": user_prompt}
                     ]
@@ -57,9 +62,22 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                 st.subheader("📝 Ο Κώδικας σου:")
                 st.markdown(answer)
                 
-                # 6. Αποθήκευση ΟΛΟΚΛΗΡΗΣ της απάντησης (Διορθωμένο Syntax)
+                # 6. Ασφαλής Αποθήκευση στα Logs
                 try:
                     with open("research_logs.txt", "a", encoding="utf-8") as f:
                         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         f.write(f"TS: {ts} | ID: {student_id}\n")
                         f.write(f"PROMPT: {user_prompt}\n")
+                        f.write(f"ANSWER:\n{answer}\n") # Εδώ γράφει όλο το κείμενο
+                        f.write("-" * 50 + "\n")
+                    st.success("✅ Η δραστηριότητα καταγράφηκε ολόκληρη!")
+                except Exception as log_error:
+                    st.warning(f"⚠️ Σφάλμα logs: {log_error}")
+
+            except Exception as e:
+                st.error(f"❌ Σφάλμα API: {e}")
+    else:
+        st.warning("⚠️ Παρακαλώ γράψε μια ερώτηση.")
+
+st.divider()
+st.caption("AI STEM Lab v2.6 | Maqueen Python Edition")
