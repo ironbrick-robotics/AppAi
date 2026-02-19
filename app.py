@@ -28,6 +28,7 @@ if st.button("Εκτέλεση και Καταγραφή"):
         success = False
         answer = ""
         # Χρήση και των δύο μοντέλων για μεγαλύτερη αξιοπιστία
+       # Διόρθωση ονομάτων μοντέλων για τη νέα βιβλιοθήκη
         models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
 
         with st.spinner('Το AI σκέφτεται...'):
@@ -37,8 +38,8 @@ if st.button("Εκτέλεση και Καταγραφή"):
                 attempt = 0
                 while attempt < max_retries and not success:
                     try:
-                        response = client.models.generate_content(
-                            model=model_name, 
+                       response = client.models.generate_content(
+                            model=model_name, # Δοκίμασε σκέτο το όνομα
                             contents=user_prompt
                         )
                         answer = response.text
@@ -74,3 +75,4 @@ if st.button("Εκτέλεση και Καταγραφή"):
             
     else:
         st.warning("Γράψε κάτι!")
+
