@@ -2,69 +2,50 @@ import streamlit as st
 from openai import OpenAI
 import datetime
 
-# 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖")
 
-# 2. Σύνδεση με το API της Groq
 try:
-    # Τραβάει το κλειδί από το Settings -> Secrets του Streamlit Cloud
-    api_key_secret = st.secrets["GROQ_API_KEY"]
-    client = OpenAI(
-        base_url="https://api.groq.com/openai/v1",
-        api_key=api_key_secret
-    )
+    api_key = st.secrets["GROQ_API_KEY"]
+    client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key)
 except Exception as e:
-    st.error("❌ Το API Key (GROQ_API_KEY) δεν βρέθηκε στα Secrets του Streamlit Cloud!")
+    st.error("❌ Λείπει το API Key!")
     st.stop()
 
-# 3. Sidebar - Διαχείριση για τον Καθηγητή
-st.sidebar.title("⚙️ Διαχείριση Admin")
-if st.sidebar.checkbox("Εμφάνιση Επιλογών Κατεβάσματος"):
-    try:
-        with open("research_logs.txt", "r", encoding="utf-8") as f:
-            st.sidebar.download_button(
-                label="📥 Κατέβασμα Logs (TXT)",
-                data=f,
-                file_name=f"robotics_logs_{datetime.date.today()}.txt",
-                mime="text/plain"
-            )
-    except FileNotFoundError:
-        st.sidebar.warning("Δεν υπάρχουν ακόμα καταγραφές.")
-
-# 4. Κύριο Περιβάλλον Μαθητή
-st.title("🤖 Maqueen Micro:bit AI Assistant")
-st.info("Γράψε τι θέλεις να κάνει το ρομπότ Maqueen και θα λάβεις τον κώδικα σε Python!")
+st.title("🤖 Maqueen Micro:bit Assistant")
 
 student_id = st.text_input("ID Μαθητή:", "Guest")
-user_prompt = st.text_area("Περίγραψε την αποστολή (π.χ. 'Αποφυγή εμποδίων με υπερήχους'):")
+user_prompt = st.text_area("Τι θέλεις να κάνει το Maqueen;")
 
-# 5. Εκτέλεση και Παραγωγή Κώδικα
-if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
+if st.button("Εκτέλεση και Καταγραφή"):
     if user_prompt:
         with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
             try:
                 response = client.chat.completions.create(
                     model="llama-3.3-70b-versatile",
                     messages=[
-                        {
-                            "role": "system", 
-                            "content": (
-                                "Είσαι ειδικός καθηγητής ρομποτικής Maqueen. "
-                                "Απαντάς στα Ελληνικά. Δίνεις πάντα κώδικα MicroPython για Micro:bit. "
-                                "Εξήγησε σύντομα τι κάνει ο κώδικας."
-                            )
-                        },
+                        {"role": "system", "content": "Είσαι ειδικός στο Maqueen Micro:bit. Απάντα στα Ελληνικά και δίνε πάντα κώδικα MicroPython για το Maqueen."},
                         {"role": "user", "content": user_prompt}
                     ]
                 )
-                
                 answer = response.choices[0].message.content
-                st.subheader("📝 Ο Κώδικας σου:")
+                st.subheader("🤖 Ο κώδικας σου:")
                 st.markdown(answer)
                 
-                # 6. Ασφαλής Αποθήκευση στα Logs
-                try:
-                    with open("research_logs.txt", "a", encoding="utf-8") as f:
-                        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        f.write(f"TIMESTAMP: {ts}\nID: {student_id}\nPROMPT: {user}
+                # Αποθήκευση
+                with open("research_logs.txt", "a", encoding="utf-8") as f:
+                    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"TS: {ts} | ID: {student_id}\nPROMPT: {user_prompt}\nANSWER: {answer[:100]}...\n{'-'*20}\n")
+                st.success("✅ Καταγράφηκε!")
+            except Exception as e:
+                st.error(f"❌ Σφάλμα: {e}")
+    else:
+        st.warning("⚠️ Γράψε μια ερώτηση!")
 
+# Sidebar για κατέβασμα των Logs
+st.sidebar.title("Διαχείριση")
+if st.sidebar.checkbox("Εμφάνιση Επιλογών Admin"):
+    try:
+        with open("research_logs.txt", "r", encoding="utf-8") as f:
+            st.sidebar.download_button("📥 Κατέβασμα Logs (TXT)", f, "research_logs.txt")
+    except:
+        st.sidebar.write("Δεν υπάρχουν ακόμα καταγραφές.")
