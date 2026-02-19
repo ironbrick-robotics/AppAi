@@ -42,7 +42,7 @@ except Exception as e:
     st.stop()
 
 # 3. Δημιουργία Μενού με Tabs
-tab1, tab2, tab3, app_tab = st.tabs(["📑 Tab 1", "📊 Tab 2", "⚙️ Tab 3", "🚀 App"])
+tab1, tab2, tab3, app_tab = st.tabs(["Εκπαίδευση", "Δημοσιεύσεις", "Διαγωνισμοί", "🚀 App"])
 
 with tab1:
     st.header("Ενότητα 1", anchor=False)
@@ -125,3 +125,4 @@ with app_tab:
 
 st.divider()
 st.caption("AI STEM Lab v5.1 | Private Portal Edition")
+
