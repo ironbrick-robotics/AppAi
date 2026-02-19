@@ -6,7 +6,7 @@ import requests
 # 1. Ρύθμιση Σελίδας
 st.set_page_config(page_title="Ph.D. Research Portal", page_icon="🎓", layout="wide")
 
-# CSS για Clean Research Interface
+# CSS για Clean Interface και Visual Blocks
 st.markdown("""
     <style>
     header {visibility: hidden;}
@@ -20,14 +20,17 @@ st.markdown("""
         font-weight: bold;
         border-radius: 10px 10px 0 0;
     }
-    /* Στυλ για τις κάρτες δημοσιεύσεων */
+    /* Στυλ για τα Virtual Blocks */
+    .block-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 10px 0;
+    }
+    .block-event { background-color: #ffab19; color: white; padding: 10px; border-radius: 8px 8px 0 0; font-weight: bold; border: 2px solid #e69100; }
+    .block-control { background-color: #ff6680; color: white; padding: 10px; margin-left: 20px; border-left: 10px solid #d33; font-weight: bold; }
+    .block-motion { background-color: #4c97ff; color: white; padding: 10px; margin-left: 40px; border-radius: 4px; border: 1px solid #3373cc; margin-top: 2px; }
     .pub-box {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #ff4b4b;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-        margin-bottom: 15px;
+        background-color: #ffffff; padding: 20px; border-radius: 10px; border-left: 5px solid #ff4b4b;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -38,103 +41,80 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key_secret)
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.warning("⚠️ Σύνδεση σε λειτουργία Read-Only (Ελέγξτε τα Secrets).")
+    st.warning("⚠️ Σύνδεση σε λειτουργία Read-Only.")
 
 # 3. Δομή Tabs
 tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
-    "📖 Ταυτότητα Έρευνας", 
-    "📈 Πρόοδος", 
-    "📚 Δημοσιεύσεις",
-    "🚀 App (IDE)", 
-    "📂 Αρχεία"
+    "📖 Ταυτότητα Έρευνας", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (IDE)", "📂 Αρχεία"
 ])
 
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
     st.subheader("Τίτλος Διδακτορικού", anchor=False)
     st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης: Μοντέλα, Μέθοδοι και Επιπτώσεις στη Σύγχρονη Εκπαίδευση")
-    st.write("**Ερευνητική Περιοχή:** Python Software Development, System Prompting & Interaction Logging.")
 
 with tab_progress:
     st.header("Χρονοδιάγραμμα & Ορόσημα", anchor=False)
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("### 1ο Έτος")
-        st.write("- [x] Βιβλιογραφική Ανασκόπηση\n- [x] Κατάθεση Υπομνήματος\n- [x] Σχεδιασμός Μεθοδολογίας")
+        st.markdown("### 1ο Έτος\n- [x] Βιβλιογραφική Ανασκόπηση\n- [x] Κατάθεση Υπομνήματος")
     with col2:
-        st.markdown("### 2ο Έτος (Σε εξέλιξη)")
-        st.write("- [x] Ανάπτυξη Λογισμικού (v5.4)\n- [ ] Expert-based Evaluation\n- [ ] Πιλοτική Εφαρμογή")
-    with col3:
-        st.markdown("### 3ο Έτος")
-        st.write("- [ ] Τελική Συλλογή Δεδομένων\n- [ ] Συγγραφή Διατριβής\n- [ ] Υποστήριξη")
+        st.markdown("### 2ο Έτος\n- [x] Ανάπτυξη Λογισμικού (v5.6)\n- [ ] Dual-Modal Coding Interface")
 
 with tab_pubs:
     st.header("Επιστημονικές Δημοσιεύσεις", anchor=False)
-    
-    # --- ΔΙΕΘΝΗ ΣΥΝΕΔΡΙΑ ---
-    st.subheader("🌐 Διεθνή Συνέδρια με Κριτές", anchor=False)
-    with st.container():
-        st.markdown("""
-        <div class="pub-box">
-            <strong>Τίτλος:</strong> "Competitive Robotics in Education: Didactic Approach and Technological Analysis of a Mini Sumo Robot"<br>
-            <strong>Είδος:</strong> Διεθνές Συνέδριο (Conference Paper)<br>
-            <strong>Συνέδριο:</strong> 4th International Conference on Sport & Education (ICSE 2025)<br>
-            <strong>Τοποθεσία:</strong> Lisbon, Portugal<br>
-            <a href="#">🔗 URL Δημοσίευσης (Coming Soon)</a>
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.divider()
-
-    # --- ΕΘΝΙΚΑ ΣΥΝΕΔΡΙΑ / ΗΜΕΡΙΔΕΣ ---
-    st.subheader("🏛️ Εθνικά Συνέδρια & Ημερίδες", anchor=False)
-    with st.container():
-        st.markdown("""
-        <div class="pub-box" style="border-left-color: #00a0dc;">
-            <strong>Τίτλος:</strong> "Από τον Αλγόριθμο στη Δημιουργία: Ενσωμάτωση της Παραγωγικής ΤΝ στην Εκπαίδευση"<br>
-            <strong>Είδος:</strong> Ημερίδα / Συνέδριο<br>
-            <strong>Φορέας:</strong> Τεχνητή Νοημοσύνη και Καινοτομία στην Εκπαίδευση, ΔΙΠΑΕ<br>
-            <strong>Τοποθεσία:</strong> Θεσσαλονίκη, Ελλάδα<br>
-            <a href="#">🔗 URL Δημοσίευσης</a>
-        </div>
-        """, unsafe_allow_html=True)
+    st.subheader("🌐 Διεθνή Συνέδρια", anchor=False)
+    st.markdown('<div class="pub-box"><strong>"Competitive Robotics in Education"</strong><br>ICSE 2025, Lisbon</div>', unsafe_allow_html=True)
+    st.subheader("🏛️ Εθνικά Συνέδρια", anchor=False)
+    st.markdown('<div class="pub-box" style="border-left-color: #00a0dc;"><strong>"Από τον Αλγόριθμο στη Δημιουργία"</strong><br>ΔΙΠΑΕ, Θεσσαλονίκη</div>', unsafe_allow_html=True)
 
 with tab_app:
-    st.header("🔬 AI Robotics Research Interface", anchor=False)
-    col_in, col_out = st.columns(2, gap="large")
+    st.header("🔬 AI Robotics Research Interface (Dual-Modal)", anchor=False)
+    col_in, col_out = st.columns([1, 1], gap="large")
+    
     with col_in:
-        st.subheader("Interaction Input", anchor=False)
+        st.subheader("📥 Interaction Input", anchor=False)
         with st.form(key='research_form', clear_on_submit=True):
             u_id = st.text_input("Researcher ID:", value="Expert_User")
-            prompt = st.text_area("Περιγραφή Αποστολής Maqueen:", height=150)
-            btn = st.form_submit_button("🚀 Execute & Log")
-    
+            prompt = st.text_area("Περιγραφή Αποστολής (π.χ. Ακολούθησε τη γραμμή):", height=150)
+            btn = st.form_submit_button("🚀 Generate Code & Blocks")
+
     with col_out:
-        st.subheader("AI Response", anchor=False)
+        st.subheader("🖥️ AI Output (Python & Blocks)", anchor=False)
         if btn and prompt:
-            with st.spinner('⏳ Παραγωγή κώδικα...'):
+            with st.spinner('⏳ Generative AI is working...'):
                 try:
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[
-                            {"role": "system", "content": "Είσαι ειδικός καθηγητής Maqueen. Απάντα στα Ελληνικά με κώδικα MicroPython. Χώρισε με ---ΕΝΑΛΛΑΚΤΙΚΟΣ--- αν υπάρχει 2η λύση."},
+                            {"role": "system", "content": """Είσαι ειδικός καθηγητής Maqueen. 
+                            Για κάθε ερώτηση, πρέπει να παρέχεις:
+                            1. Τον κώδικα Python για Microbit.
+                            2. Μια ενότητα που ξεκινά με τη λέξη 'BLOCKS:' όπου θα περιγράφεις τη λογική σε μορφή Pseudo-blocks χρησιμοποιώντας HTML-like ορολογία (π.χ. [ΕΝΑΡΞΗ], [ΕΠΑΝΑΛΗΨΗ]).
+                            Απάντα στα Ελληνικά."""},
                             {"role": "user", "content": prompt}
                         ]
                     )
                     ans = response.choices[0].message.content
-                    st.info(ans)
                     
-                    # Log to Google Sheets
-                    data = {"data": [{"Timestamp": str(datetime.datetime.now()), "Student_ID": u_id, "Prompt": prompt, "Answer": ans}]}
-                    requests.post(SHEETDB_URL, json=data)
-                    st.toast("✅ Καταγράφηκε επιτυχώς!")
+                    # Διαχωρισμός Python και Blocks για το UI
+                    if "BLOCKS:" in ans:
+                        code_part, block_part = ans.split("BLOCKS:")
+                        st.code(code_part, language='python')
+                        st.markdown("### 🧩 Visual Logic Representation")
+                        st.markdown(f'<div style="background-color:#f0f0f0; padding:15px; border-radius:10px;">{block_part}</div>', unsafe_allow_html=True)
+                    else:
+                        st.info(ans)
+                    
+                    # Logging
+                    requests.post(SHEETDB_URL, json={"data": [{"Timestamp": str(datetime.datetime.now()), "Student_ID": u_id, "Prompt": prompt, "Answer": ans}]})
+                    st.toast("✅ Interaction Logged!")
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
 with tab_data:
-    st.header("Διαχείριση Ερευνητικών Δεδομένων", anchor=False)
-    st.write("Η βάση δεδομένων περιλαμβάνει τα logs από τις expert-based αξιολογήσεις.")
-    st.link_button("📊 Άνοιγμα Google Sheets Database", st.secrets.get("GSHEET_URL_LINK", "https://docs.google.com/spreadsheets/"))
+    st.header("Διαχείριση Δεδομένων", anchor=False)
+    st.link_button("📊 Open Database", st.secrets.get("GSHEET_URL_LINK", "https://docs.google.com/spreadsheets/"))
 
 st.divider()
-st.caption("PhD v5.6 | Integrated Research Management")
+st.caption("PhD v6.1 | Interaction Logging & Visual Logic Synthesis")
