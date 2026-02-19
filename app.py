@@ -40,9 +40,9 @@ tab_info, tab_progress, tab_app, tab_data = st.tabs([
 ])
 
 with tab_info:
-    st.header("Ερευνητικό Υπόμνημα", anchor=False)
-    st.subheader("Τίτλος Διδακτορικού", anchor=False)
-    st.write("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης: Μοντέλα, Μέθοδοι και Επιπτώσεις στη Σύγχρονη Εκπαίδευση")
+    st.header("Τίτλος Διδακτορικού", anchor=False)
+    st.subheader("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης: Μοντέλα, Μέθοδοι και Επιπτώσεις στη Σύγχρονη Εκπαίδευση", anchor=False)
+    st.write("Ημερομηνία έναρξης εκπόνησης διατριβής:15-01-2025")
     
 
 with tab_progress:
@@ -91,4 +91,5 @@ with tab_data:
 
 st.divider()
 st.caption("PhD Ecosystem v5.3 | Interaction Logging & Research Management")
+
 
