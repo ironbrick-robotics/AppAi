@@ -19,27 +19,27 @@ except Exception as e:
     st.stop()
 
 # --- ΤΙΤΛΟΣ ---
-st.title("🤖 Maqueen Robotics IDE")
+st.title("Maqueen Robotics IDE")
 st.divider()
 
 # 3. Layout Δύο Στηλών
 col_input, col_output = st.columns([1, 1], gap="large")
 
 with col_input:
-    st.subheader("📥 Είσοδος Μαθητή")
+    st.subheader("Είσοδος Μαθητή 📥")
     
     # Χρήση Form για Enter support και αυτόματο καθάρισμα (clear_on_submit)
     with st.form(key='maqueen_form', clear_on_submit=True):
         student_id = st.text_input("ID Μαθητή:", value="Guest")
         user_prompt = st.text_area("Περιγράψτε την αποστολή του Maqueen:", height=200)
-        submit_button = st.form_submit_button(label="🚀 Δημιουργία Κώδικα & Καταγραφή")
+        submit_button = st.form_submit_button(label="Υποβολή")
 
 with col_output:
-    st.subheader("🖥️ Αποτέλεσμα AI")
+    st.subheader("Ο Κώδικας σου:")
     
     if submit_button:
         if user_prompt:
-            with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
+            with st.spinner('⏳ Ο κώδικας σου δημιουργείται...'):
                 try:
                     # Κλήση AI
                     response = client.chat.completions.create(
@@ -66,12 +66,12 @@ with col_output:
                         alt_code = None
 
                     # Εμφάνιση Κύριας Λύσης (Κόκκινο/Γκρι πλαίσιο)
-                    st.markdown("### 🔴 Προτεινόμενη Λύση")
+                    st.markdown("Προτεινόμενη Λύση")
                     st.info(main_code)
                     
                     # Εμφάνιση Εναλλακτικής Λύσης (Μπλε πλαίσιο)
                     if alt_code and alt_code.strip():
-                        st.markdown("### 🔵 Εναλλακτική Προσέγγιση")
+                        st.markdown("Εναλλακτική Λύση")
                         st.success(alt_code)
 
                     # ΑΠΟΘΗΚΕΥΣΗ ΜΕΣΩ SHEETDB
@@ -98,3 +98,4 @@ with col_output:
 
 st.divider()
 st.caption("AI STEM Lab v4.2 | Maqueen side-by-side Edition")
+
