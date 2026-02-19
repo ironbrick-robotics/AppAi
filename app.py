@@ -2,14 +2,20 @@ import streamlit as st
 from google import genai
 import datetime
 import sys
-import time # Απαραίτητο για την αναμονή
+import time
 
 # ΑΝΑΓΚΑΣΤΙΚΟ UTF-8 ΓΙΑ ΤΑ ΕΛΛΗΝΙΚΑ
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-# ΡΥΘΜΙΣΗ ΜΕ ΤΗ ΝΕΑ ΒΙΒΛΙΟΘΗΚΗ
-client = genai.Client(api_key="AIzaSyChnIwc8TbMntyf7RkMS00Ir25wWApQBfc")
+# --- ΑΣΦΑΛΕΙΑ: ΛΗΨΗ API KEY ΑΠΟ ΤΑ SECRETS ---
+try:
+    # Εδώ το app τραβάει το κλειδί από το Streamlit Cloud Settings -> Secrets
+    api_key_secret = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=api_key_secret)
+except Exception as e:
+    st.error("Το API Key δεν βρέθηκε στα Secrets. Παρακαλώ ρυθμίστε το GEMINI_API_KEY στα Settings του Streamlit.")
+    st.stop()
 
 st.title("🤖 AI STEM Lab: Robotics Assistant")
 
@@ -18,34 +24,37 @@ user_prompt = st.text_area("Γράψε το ερώτημά σου για το ρ
 
 if st.button("Εκτέλεση και Καταγραφή"):
     if user_prompt:
-        # --- ΜΗΧΑΝΙΣΜΟΣ RETRY ---
         max_retries = 3
-        attempt = 0
         success = False
         answer = ""
+        # Χρήση και των δύο μοντέλων για μεγαλύτερη αξιοπιστία
+        models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
 
         with st.spinner('Το AI σκέφτεται...'):
-            while attempt < max_retries and not success:
-                try:
-                    # Κλήση του μοντέλου
-                    response = client.models.generate_content(
-                        model="gemini-2.0-flash", 
-                        contents=user_prompt
-                    )
-                    answer = response.text
-                    success = True
-                    # Μικρή παύση για να μην "χτυπάμε" το όριο των 15 RPM συνέχεια
-                    time.sleep(2) 
-                    
-                except Exception as e:
-                    if "429" in str(e):
-                        attempt += 1
-                        wait_time = attempt * 10 # 10s την 1η φορά, 20s τη 2η...
-                        st.warning(f"Το σύστημα είναι απασχολημένο (Quota 429). Προσπάθεια {attempt}/{max_retries}. Αναμονή {wait_time}s...")
-                        time.sleep(wait_time)
-                    else:
-                        st.error(f"Σφάλμα: {e}")
-                        break # Σταματάμε αν είναι άλλο είδος σφάλματος
+            for model_name in models_to_try:
+                if success: break
+                
+                attempt = 0
+                while attempt < max_retries and not success:
+                    try:
+                        response = client.models.generate_content(
+                            model=model_name, 
+                            contents=user_prompt
+                        )
+                        answer = response.text
+                        success = True
+                        
+                    except Exception as e:
+                        if "429" in str(e):
+                            attempt += 1
+                            wait_time = attempt * 10
+                            if attempt < max_retries:
+                                time.sleep(wait_time)
+                            else:
+                                continue # Δοκίμασε το επόμενο μοντέλο
+                        else:
+                            st.error(f"Σφάλμα: {e}")
+                            break
 
         if success:
             st.markdown("### Απάντηση:")
@@ -57,11 +66,11 @@ if st.button("Εκτέλεση και Καταγραφή"):
                     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     f.write(f"{ts} | {student_id} | {user_prompt} | {answer}\n")
                     f.write("-" * 40 + "\n")
-                st.success("Καταγράφηκε επιτυχώς!")
+                st.success("Καταγράφηκε!")
             except Exception as log_e:
-                st.error(f"Σφάλμα κατά την αποθήκευση: {log_e}")
-        elif attempt == max_retries:
-            st.error("Εξαντλήθηκαν οι προσπάθειες. Το ημερήσιο όριο (Quota) μάλλον τελείωσε.")
+                st.error(f"Σφάλμα logs: {log_e}")
+        else:
+            st.error("Υπέρβαση ορίου χρήσης. Δοκιμάστε πάλι σε λίγα λεπτά.")
             
     else:
         st.warning("Γράψε κάτι!")
