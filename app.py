@@ -8,71 +8,58 @@ import time
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-# --- ΑΣΦΑΛΕΙΑ: ΛΗΨΗ API KEY ΑΠΟ ΤΑ SECRETS ---
+# --- ΡΥΘΜΙΣΗ ΑΣΦΑΛΕΙΑΣ API KEY ---
 try:
-    # Εδώ το app τραβάει το κλειδί από το Streamlit Cloud Settings -> Secrets
+    # Τραβάει το κλειδί από το Streamlit Cloud Dashboard -> Settings -> Secrets
     api_key_secret = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=api_key_secret)
 except Exception as e:
-    st.error("Το API Key δεν βρέθηκε στα Secrets. Παρακαλώ ρυθμίστε το GEMINI_API_KEY στα Settings του Streamlit.")
+    st.error("❌ Το API Key δεν βρέθηκε! Πήγαινε στα Settings του Streamlit Cloud και πρόσθεσε το GEMINI_API_KEY στα Secrets.")
     st.stop()
 
+st.set_page_config(page_title="AI STEM Lab", page_icon="🤖")
 st.title("🤖 AI STEM Lab: Robotics Assistant")
+st.info("Το AI μπορεί να απαντήσει στις ερωτήσεις σου για τη Ρομποτική και τον Προγραμματισμό.")
 
 student_id = st.text_input("ID Συμμετέχοντος:", "Guest")
 user_prompt = st.text_area("Γράψε το ερώτημά σου για το ρομπότ:")
 
 if st.button("Εκτέλεση και Καταγραφή"):
     if user_prompt:
-        max_retries = 3
+        max_retries = 2
         success = False
         answer = ""
-        # Χρήση και των δύο μοντέλων για μεγαλύτερη αξιοπιστία
-       # Διόρθωση ονομάτων μοντέλων για τη νέα βιβλιοθήκη
+        
+        # Λίστα μοντέλων προς δοκιμή
+        # Δοκιμάζουμε πρώτα το 2.0 και μετά το 1.5 αν υπάρξει πρόβλημα
         models_to_try = ["gemini-2.0-flash", "gemini-1.5-flash"]
 
-        with st.spinner('Το AI σκέφτεται...'):
+        with st.spinner('⏳ Το AI επεξεργάζεται την ερώτησή σου...'):
             for model_name in models_to_try:
-                if success: break
+                if success:
+                    break
                 
                 attempt = 0
                 while attempt < max_retries and not success:
                     try:
-                       response = client.models.generate_content(
-                            model=model_name, # Δοκίμασε σκέτο το όνομα
+                        # Κλήση της νέας βιβλιοθήκης google-genai
+                        response = client.models.generate_content(
+                            model=model_name, 
                             contents=user_prompt
                         )
                         answer = response.text
                         success = True
                         
                     except Exception as e:
-                        if "429" in str(e):
+                        error_msg = str(e)
+                        # Διαχείριση ορίου (429)
+                        if "429" in error_msg:
                             attempt += 1
-                            wait_time = attempt * 10
                             if attempt < max_retries:
-                                time.sleep(wait_time)
+                                time.sleep(5) # Αναμονή 5 δευτερόλεπτα
                             else:
-                                continue # Δοκίμασε το επόμενο μοντέλο
-                        else:
-                            st.error(f"Σφάλμα: {e}")
-                            break
-
-        if success:
-            st.markdown("### Απάντηση:")
-            st.write(answer)
-            
-            # Αποθήκευση
-            try:
-                with open("research_logs.txt", "a", encoding="utf-8") as f:
-                    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    f.write(f"{ts} | {student_id} | {user_prompt} | {answer}\n")
-                    f.write("-" * 40 + "\n")
-                st.success("Καταγράφηκε!")
-            except Exception as log_e:
-                st.error(f"Σφάλμα logs: {log_e}")
-        else:
-            st.error("Υπέρβαση ορίου χρήσης. Δοκιμάστε πάλι σε λίγα λεπτά.")
-            
-    else:
-        st.warning("Γράψε κάτι!")
-
+                                # Αν εξαντληθούν οι προσπάθειες στο 2.0, πάμε στο επόμενο μοντέλο
+                                continue 
+                        # Διαχείριση λάθος μοντέλου ή έκδοσης (404)
+                        elif "404" in error_msg:
+                            break # Πή
