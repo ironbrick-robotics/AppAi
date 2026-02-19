@@ -4,103 +4,122 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="Maqueen Lab", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Maqueen Robotics Portal", page_icon="🤖", layout="wide")
+
+# CSS για "καθαρό" interface: Εξαφανίζει τους συνδετήρες (anchors) και ομορφαίνει τα Tabs
+st.markdown("""
+    <style>
+    /* Εξαφάνιση του συμβόλου του συνδετήρα δίπλα από τίτλους */
+    .stApp a.header-anchor { display: none; }
+    
+    /* Ρυθμίσεις για τα Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+    .stTabs [data-baseweb="tab"] { 
+        height: 50px; 
+        font-size: 18px; 
+        font-weight: 600;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # 2. Σύνδεση με Groq & SheetDB
 try:
     api_key_secret = st.secrets["GROQ_API_KEY"]
-    client = OpenAI(
-        base_url="https://api.groq.com/openai/v1",
-        api_key=api_key_secret
-    )
+    client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key_secret)
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except Exception as e:
     st.error("❌ Ελέγξτε τα Secrets (GROQ_API_KEY και GSHEET_URL)!")
     st.stop()
 
-# --- ΤΙΤΛΟΣ ---
-st.title("Maqueen AiLab", anchor=False)
-st.divider()
+# 3. Δημιουργία Μενού με Tabs
+# Το App είναι η τελευταία καρτέλα, τα άλλα είναι απλό κείμενο
+tab1, tab2, tab3, app_tab = st.tabs(["📑 Tab 1", "📊 Tab 2", "⚙️ Tab 3", "🚀 App"])
 
-# 3. Layout Δύο Στηλών
-col_input, col_output = st.columns([1, 1], gap="large")
+with tab1:
+    st.header("Ενότητα 1", anchor=False)
+    st.write("Καλώς ήρθατε στην πρώτη σελίδα. Εδώ μπορείτε να βάλετε θεωρία ή οδηγίες.")
 
-with col_input:
-    st.subheader("Είσοδος Μαθητή 📥", anchor=False)
-    
-    # Χρήση Form για Enter support και αυτόματο καθάρισμα (clear_on_submit)
-    with st.form(key='maqueen_form', clear_on_submit=True):
-        student_id = st.text_input("ID Μαθητή:", value="Guest")
-        user_prompt = st.text_area("Περιγράψτε την αποστολή του Maqueen:", height=200)
-        submit_button = st.form_submit_button(label="Υποβολή")
+with tab2:
+    st.header("Ενότητα 2", anchor=False)
+    st.write("Αυτή η σελίδα προορίζεται για στατιστικά ή επιπλέον υλικό.")
 
-with col_output:
-    st.subheader("Ο Κώδικας σου:", anchor=False)
-    
-    if submit_button:
-        if user_prompt:
-            with st.spinner('⏳ Ο κώδικας σου δημιουργείται...'):
-                try:
-                    # Κλήση AI
-                    response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[
-                            {
-                                "role": "system", 
-                                "content": "Είσαι ειδικός καθηγητής Maqueen. Απάντα στα Ελληνικά με κώδικα MicroPython. "
-                                           "Αν υπάρχει εναλλακτικός τρόπος, χώρισε την απάντησή σου με τη λέξη '---ΕΝΑΛΛΑΚΤΙΚΟΣ---'."
-                            },
-                            {"role": "user", "content": user_prompt}
-                        ]
-                    )
-                    
-                    full_answer = response.choices[0].message.content
-                    
-                    # Διαχωρισμός Κύριας και Εναλλακτικής Λύσης
-                    if "---ΕΝΑΛΛΑΚΤΙΚΟΣ---" in full_answer:
-                        parts = full_answer.split("---ΕΝΑΛΛΑΚΤΙΚΟΣ---")
-                        main_code = parts[0]
-                        alt_code = parts[1]
-                    else:
-                        main_code = full_answer
-                        alt_code = None
+with tab3:
+    st.header("Ενότητα 3", anchor=False)
+    st.write("Εδώ μπορείτε να προσθέσετε πληροφορίες για τις ρυθμίσεις του Maqueen.")
 
-                    # Εμφάνιση Κύριας Λύσης (Κόκκινο/Γκρι πλαίσιο)
-                    st.markdown("Προτεινόμενη Λύση")
-                    st.info(main_code)
-                    
-                    # Εμφάνιση Εναλλακτικής Λύσης (Μπλε πλαίσιο)
-                    if alt_code and alt_code.strip():
-                        st.markdown("Εναλλακτική Λύση")
-                        st.success(alt_code)
+with app_tab:
+    # Εδώ τρέχει η εφαρμογή μας
+    st.header("🤖 Maqueen Robotics IDE", anchor=False)
+    st.divider()
 
-                    # ΑΠΟΘΗΚΕΥΣΗ ΜΕΣΩ SHEETDB
-                    data_to_send = {
-                        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Student_ID": str(student_id),
-                        "Prompt": str(user_prompt),
-                        "Answer": str(full_answer)
-                    }
-                    
-                    post_req = requests.post(SHEETDB_URL, json={"data": [data_to_send]})
-                    
-                    if post_req.status_code == 201:
-                        st.toast("✅ Η ερώτηση καταγράφηκε επιτυχώς!")
-                    else:
-                        st.error(f"⚠️ Πρόβλημα καταγραφής: {post_req.text}")
-                    
-                except Exception as e:
-                    st.error(f"❌ Σφάλμα API: {e}")
+    # Layout Δύο Στηλών (Side-by-Side)
+    col_input, col_output = st.columns([1, 1], gap="large")
+
+    with col_input:
+        st.subheader("📥 Είσοδος Μαθητή", anchor=False)
+        # Φόρμα για Enter support και αυτόματο καθάρισμα
+        with st.form(key='maqueen_form', clear_on_submit=True):
+            student_id = st.text_input("ID Μαθητή:", value="Guest")
+            user_prompt = st.text_area("Περιγράψτε την αποστολή του Maqueen:", height=200)
+            submit_button = st.form_submit_button(label="🚀 Δημιουργία Κώδικα & Καταγραφή")
+
+    with col_output:
+        st.subheader("🖥️ Αποτέλεσμα AI", anchor=False)
+        
+        if submit_button:
+            if user_prompt:
+                with st.spinner('⏳ Το AI δημιουργεί τον κώδικα...'):
+                    try:
+                        # Κλήση AI
+                        response = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[
+                                {
+                                    "role": "system", 
+                                    "content": "Είσαι ειδικός καθηγητής Maqueen. Απάντα στα Ελληνικά με κώδικα MicroPython. "
+                                               "Αν υπάρχει εναλλακτικός τρόπος, χώρισε την απάντησή σου με τη λέξη '---ΕΝΑΛΛΑΚΤΙΚΟΣ---'."
+                                },
+                                {"role": "user", "content": user_prompt}
+                            ]
+                        )
+                        full_answer = response.choices[0].message.content
+                        
+                        # Διαχωρισμός Κύριας και Εναλλακτικής Λύσης
+                        if "---ΕΝΑΛΛΑΚΤΙΚΟΣ---" in full_answer:
+                            parts = full_answer.split("---ΕΝΑΛΛΑΚΤΙΚΟΣ---")
+                            main_code = parts[0]
+                            alt_code = parts[1]
+                        else:
+                            main_code = full_answer
+                            alt_code = None
+
+                        # Εμφάνιση Κύριας Λύσης
+                        st.markdown("### 🔴 Προτεινόμενη Λύση")
+                        st.info(main_code)
+                        
+                        # Εμφάνιση Εναλλακτικής Λύσης (μπλε πλαίσιο)
+                        if alt_code and alt_code.strip():
+                            st.markdown("### 🔵 Εναλλακτική Προσέγγιση")
+                            st.success(alt_code)
+
+                        # ΑΠΟΘΗΚΕΥΣΗ ΜΕΣΩ SHEETDB (Μόνο στο Cloud, τίποτα στην οθόνη)
+                        data_to_send = {
+                            "data": [{
+                                "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                "Student_ID": str(student_id),
+                                "Prompt": str(user_prompt),
+                                "Answer": str(full_answer)
+                            }]
+                        }
+                        requests.post(SHEETDB_URL, json=data_to_send)
+                        st.toast("✅ Η δραστηριότητα καταγράφηκε!", icon="📝")
+                        
+                    except Exception as e:
+                        st.error(f"❌ Σφάλμα: {e}")
+            else:
+                st.warning("⚠️ Παρακαλώ γράψτε μια αποστολή.")
         else:
-            st.warning("⚠️ Παρακαλώ γράψε μια αποστολή για το ρομπότ.")
-    else:
-        st.write("Περιμένω την ερώτησή σου...")
+            st.write("Περιμένω την ερώτησή σας στην καρτέλα 'App'.")
 
 st.divider()
-st.caption("AI STEM Lab v4.2 | Maqueen side-by-side Edition")
-
-
-
-
-
-
+st.caption("AI STEM Lab v5.0 | Professional Portal Edition")
