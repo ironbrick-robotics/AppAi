@@ -97,13 +97,16 @@ with tab_app:
                     # Θωρακισμένο Prompt με Few-Shot Examples
                     if lang_choice == "MicroPython & Blocks":
                         sys_prompt = (
-                            "Είσαι κορυφαίος μηχανικός της DFRobot. "
-                            "Γνωρίζεις όλες τις βιβλιοθήκες του οικοσυστήματος (DFRobot_Maqueen, DFRobot_HuskyLens, DFRobot_NeoPixel).\n"
-                            "Αν ο χρήστης ζητήσει προηγμένες λειτουργίες (π.χ. αναγνώριση χρωμάτων), χρησιμοποίησε τις αντίστοιχες βιβλιοθήκες της DFRobot.\n"
-                            "Ο κώδικας πρέπει να είναι βελτιστοποιημένος για το Maqueen Plus ή το Maqueen Lite."
+                           "Είσαι αυστηρός καθηγητής Maqueen. Χρησιμοποίησε ΜΟΝΟ την επίσημη βιβλιοθήκη 'maqueen' της DFRobot.\n"
                             "ΠΡΕΠΕΙ ΝΑ ΠΑΡΑΓΕΙΣ ΠΑΝΤΑ ΔΥΟ ΕΝΟΤΗΤΕΣ:\n"
                             "1. PYTHON: [Κώδικας]\n"
-                            "2. BLOCKS: [HTML Blocks]\n\n"
+                            "2. BLOCKS: [HTML Scratch Blocks]\n\n"
+                            "ΟΔΗΓΙΕΣ ΓΙΑ ΤΑ BLOCKS:\n"
+                            "- Χρησιμοποίησε <div class='scratch-block event'> για γεγονότα (🏁 Όταν ξεκινήσει).\n"
+                            "- Χρησιμοποίησε <div class='scratch-block motion'> για κινήσεις (🚀 motor_run).\n"
+                            "- Χρησιμοποίησε <div class='scratch-block control'> για βρόχους.\n"
+                            "- ΠΡΟΣΟΧΗ: Μην γράφεις απλό κείμενο στα Blocks, μόνο τα HTML tags που ορίστηκαν.\n"
+                         "Απάντα στα Ελληνικά."
                             "ΠΑΡΑΔΕΙΓΜΑ BLOCKS:\n"
                             "<div class='scratch-block event'>🏁 Όταν ξεκινήσει</div>\n"
                             "<div class='scratch-block control'>⚙️ Για πάντα</div>\n"
@@ -142,4 +145,5 @@ with tab_data:
 
 st.divider()
 st.caption("PhD v6.7 | AI Robotics Research Interface")
+
 
