@@ -1,7 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 import datetime
-import requests # Χρησιμοποιούμε requests για το SheetDB
+import requests 
 
 st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖", layout="wide")
 
@@ -11,10 +11,10 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key_secret)
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except Exception as e:
-    st.error("❌ Ελέγξτε τα Secrets (GROQ_API_KEY και GSHEET_URL).")
+    st.error("❌ Ελέγξτε τα Secrets (GROQ_API_KEY και GSHEET_URL). ❌")
     st.stop()
 
-st.title("🤖 Maqueen Micro:bit AI Assistant")
+st.title("AI Assistant: Maqueen Micro:bit ")
 student_id = st.text_input("ID Μαθητή:", "Guest")
 user_prompt = st.text_area("Τι θέλεις να κάνει το ρομπότ;")
 
@@ -30,7 +30,7 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                     ]
                 )
                 answer = response.choices[0].message.content
-                st.subheader("📝 Ο Κώδικας σου:")
+                st.subheader("Ο Κώδικας σου:")
                 st.markdown(answer)
                 
                 # --- ΑΠΟΘΗΚΕΥΣΗ ΜΕΣΩ SHEETDB (CRUD ENABLED) ---
@@ -46,9 +46,10 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                 post_req = requests.post(SHEETDB_URL, json=data_to_send)
                 
                 if post_req.status_code == 201:
-                    st.success("✅ Η δραστηριότητα αποθηκεύτηκε στο Google Sheet!")
+                    st.success("✅ Η δραστηριότητα αποθηκεύτηκε.")
                 else:
                     st.warning(f"⚠️ Σφάλμα αποθήκευσης: {post_req.text}")
 
             except Exception as e:
                 st.error(f"❌ Σφάλμα: {e}")
+
