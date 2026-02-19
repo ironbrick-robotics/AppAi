@@ -1,7 +1,11 @@
 import streamlit as st
 from openai import OpenAI
 import datetime
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
 
+# Σύνδεση με Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
 # 1. Ρύθμιση Σελίδας
 st.set_page_config(page_title="Maqueen Robotics Lab", page_icon="🤖", layout="wide")
 
@@ -62,18 +66,22 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                 st.subheader("📝 Ο Κώδικας σου:")
                 st.markdown(answer)
                 
-                # 6. Ασφαλής Αποθήκευση στα Logs
-                try:
-                    with open("research_logs.txt", "a", encoding="utf-8") as f:
-                        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        f.write(f"TS: {ts} | ID: {student_id}\n")
-                        f.write(f"PROMPT: {user_prompt}\n")
-                        f.write(f"ANSWER:\n{answer}\n") # Εδώ γράφει όλο το κείμενο
-                        f.write("-" * 50 + "\n")
-                    st.success("✅ Η δραστηριότητα καταγράφηκε ολόκληρη!")
-                except Exception as log_error:
-                    st.warning(f"⚠️ Σφάλμα logs: {log_error}")
+                # 6. Αποθήκευση στο Google Sheet
+new_data = pd.DataFrame([{
+    "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    "Student_ID": student_id,
+    "Prompt": user_prompt,
+    "Answer": answer
+}])
 
+# Διάβασμα υπαρχόντων και προσθήκη νέας γραμμής
+try:
+    existing_data = conn.read(spreadsheet=st.secrets["GSHEET_URL"])
+    updated_df = pd.concat([existing_data, new_data], ignore_index=True)
+    conn.update(spreadsheet=st.secrets["GSHEET_URL"], data=updated_df)
+    st.success("✅ Η δραστηριότητα αποθηκεύτηκε στο Google Sheet!")
+except Exception as e:
+    st.error(f"Σφάλμα σύνδεσης με Google Sheets: {e}")
             except Exception as e:
                 st.error(f"❌ Σφάλμα API: {e}")
     else:
@@ -81,3 +89,4 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
 
 st.divider()
 st.caption("AI STEM Lab v2.6 | Maqueen Python Edition")
+
