@@ -19,7 +19,7 @@ except Exception as e:
     st.stop()
 
 # --- ΤΙΤΛΟΣ ---
-st.title("Maqueen Robotics IDE")
+st.title("Maqueen Robotics", anchor=False)
 st.divider()
 
 # 3. Layout Δύο Στηλών
@@ -98,6 +98,7 @@ with col_output:
 
 st.divider()
 st.caption("AI STEM Lab v4.2 | Maqueen side-by-side Edition")
+
 
 
 
