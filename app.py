@@ -26,7 +26,7 @@ st.divider()
 col_input, col_output = st.columns([1, 1], gap="large")
 
 with col_input:
-    st.subheader("Είσοδος Μαθητή 📥")
+    st.subheader("Είσοδος Μαθητή 📥", anchor=False)
     
     # Χρήση Form για Enter support και αυτόματο καθάρισμα (clear_on_submit)
     with st.form(key='maqueen_form', clear_on_submit=True):
@@ -35,7 +35,7 @@ with col_input:
         submit_button = st.form_submit_button(label="Υποβολή")
 
 with col_output:
-    st.subheader("Ο Κώδικας σου:")
+    st.subheader("Ο Κώδικας σου:", anchor=False)
     
     if submit_button:
         if user_prompt:
@@ -98,4 +98,5 @@ with col_output:
 
 st.divider()
 st.caption("AI STEM Lab v4.2 | Maqueen side-by-side Edition")
+
 
