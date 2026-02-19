@@ -66,4 +66,5 @@ if st.button("🚀 Δημιουργία Κώδικα & Καταγραφή"):
                 try:
                     with open("research_logs.txt", "a", encoding="utf-8") as f:
                         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        f.write(f"TIMESTAMP: {ts}\nID: {student_id}\nPROMPT: {user
+                        f.write(f"TIMESTAMP: {ts}\nID: {student_id}\nPROMPT: {user}
+
