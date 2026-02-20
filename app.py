@@ -2,11 +2,12 @@ import streamlit as st
 from openai import OpenAI
 import datetime
 import requests
+import streamlit.components.v1 as components
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v8.1 | Ph.D. Edition", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.3 | Official MakeCode", page_icon="🎓", layout="wide")
 
-# --- CSS STYLING ---
+# --- CSS ΓΙΑ ΕΠΑΝΑΦΟΡΑ ΤΗΣ ΤΑΥΤΟΤΗΤΑΣ ΤΟΥ SITE ---
 st.markdown("""
     <style>
     header {visibility: hidden;} footer {visibility: hidden;}
@@ -15,7 +16,7 @@ st.markdown("""
         background-color: #ffffff; padding: 15px; border-radius: 10px;
         border-left: 5px solid #ff4b4b; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
     }
-    .block-img { border-radius: 10px; border: 1px solid #ddd; padding: 10px; background: #f9f9f9; width: 100%; }
+    iframe { border-radius: 12px; border: 2px solid #efefef; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -26,23 +27,17 @@ try:
 except:
     st.error("⚠️ Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
 
-# 3. Tabs
+# 3. Tabs (📖 Ταυτότητα, 📈 Πρόοδος, 📚 Δημοσιεύσεις, 🚀 App, 📂 Αρχεία)
 tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
-    "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (Stable Blocks)", "📂 Αρχεία"
+    "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (Official Editor)", "📂 Αρχεία"
 ])
 
-# --- TAB 1, 2, 3 (Ταυτότητα & Δημοσιεύσεις) ---
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
     st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης (Ph.D. Candidate)")
 
-with tab_pubs:
-    st.header("Επιστημονικό Έργο", anchor=False)
-    st.markdown('<div class="pub-box"><strong>Competitive Robotics in Education</strong> (ICSE 2025)</div>', unsafe_allow_html=True)
-
-# --- TAB 4: Η ΕΦΑΡΜΟΓΗ (Stable Blocks & API) ---
 with tab_app:
-    st.header("🔬 AI Robotics Research Interface v8.1", anchor=False)
+    st.header("🔬 Official MakeCode Robotics Interface", anchor=False)
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -58,16 +53,14 @@ with tab_app:
         with st.form(key='research_form', clear_on_submit=True):
             u_id = st.text_input("User ID:", value="Student_1")
             prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
-            submit = st.form_submit_button("🚀 Εκτέλεση & Καταγραφή")
+            submit = st.form_submit_button("🚀 Εκτέλεση")
 
     with col_out:
         if submit and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.spinner('⏳ Παραγωγή Κώδικα και Blocks...'):
+            with st.spinner('⏳ Παραγωγή επίσημου κώδικα...'):
                 try:
-                    # System Prompt για καθαρό κώδικα
-                    sys_prompt = "Είσαι ειδικός στο Micro:bit Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python (MicroPython). Χωρίς XML, χωρίς εισαγωγικά κείμενα."
-
+                    sys_prompt = "Είσαι ειδικός στο Micro:bit Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python. Χωρίς XML ή κείμενο."
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
@@ -76,16 +69,18 @@ with tab_app:
                     st.session_state.messages.append({"role": "assistant", "content": py_code})
 
                     # --- ΠΡΟΒΟΛΗ ΚΩΔΙΚΑ ---
-                    st.markdown("#### 🐍 MicroPython Code")
+                    st.markdown("#### 🐍 Generated Code")
                     st.code(py_code, language='python')
                     
-                    # --- ΣΤΑΘΕΡΗ ΠΡΟΒΟΛΗ BLOCKS (RENDER API) ---
-                    st.markdown("#### 🧩 Visual Blocks (MakeCode Render)")
-                    # Χρήση του Render API για δημιουργία εικόνας από τον κώδικα
-                    render_url = f"https://makecode.microbit.org/api/render?python={requests.utils.quote(py_code)}"
-                    st.image(render_url, use_container_width=True, caption="Generated Maqueen Blocks")
+                    # --- OFFICIAL MAKECODE EMBED (FIXED) ---
+                    st.markdown("#### 🧩 Official MakeCode Blocks")
                     
-                    # --- SAFE LOGGING ΣΤΟ GOOGLE SHEET ---
+                    # Χρήση του MakeCode Read-Only Editor που δέχεται κώδικα μέσω URL
+                    embed_url = f"https://makecode.microbit.org/---codeembed#python={requests.utils.quote(py_code)}"
+                    
+                    components.iframe(embed_url, height=600, scrolling=True)
+                    
+                    # --- SAFE LOGGING (Fix για Screenshot 2 & 3) ---
                     log_entry = {
                         "data": [{
                             "Timestamp": str(datetime.datetime.now()),
@@ -96,7 +91,7 @@ with tab_app:
                         }]
                     }
                     requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("✅ Επιτυχής Καταγραφή!")
+                    st.toast("✅ Επιτυχής Καταγραφή στο Sheet!")
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
