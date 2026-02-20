@@ -2,12 +2,11 @@ import streamlit as st
 from openai import OpenAI
 import datetime
 import requests
-import streamlit.components.v1 as components
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v8.5 | Ph.D. Official", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.6 | PhD Master", page_icon="🎓", layout="wide")
 
-# --- CSS ΓΙΑ ΤΗΝ ΤΑΥΤΟΤΗΤΑ ΤΟΥ SITE ---
+# --- CSS ΓΙΑ ΤΗΝ ΠΛΗΡΗ ΕΠΑΝΑΦΟΡΑ ΤΟΥ SITE ---
 st.markdown("""
     <style>
     header {visibility: hidden;} footer {visibility: hidden;}
@@ -16,13 +15,12 @@ st.markdown("""
         background-color: #ffffff; padding: 15px; border-radius: 10px;
         border-left: 5px solid #ff4b4b; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
     }
-    .action-btn {
-        background-color: #00a0dc; color: white !important; padding: 15px 25px;
-        border-radius: 8px; text-align: center; display: inline-block;
-        text-decoration: none; font-weight: bold; font-size: 18px;
-        margin: 10px 0; border: none; transition: 0.3s;
+    .official-btn {
+        background-color: #00a0dc; color: white !important; padding: 25px;
+        border-radius: 15px; text-align: center; display: block;
+        text-decoration: none; font-weight: bold; font-size: 22px;
+        margin-top: 20px; border: 3px solid #007bb5;
     }
-    .action-btn:hover { background-color: #007bb5; transform: scale(1.02); }
     </style>
     """, unsafe_allow_html=True)
 
@@ -33,41 +31,36 @@ try:
 except:
     st.error("⚠️ Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
 
-# 3. Δομή Tabs
-tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 Official IDE Bridge", "📂 Αρχεία"])
+# 3. Tabs (Ταυτότητα, Πρόοδος, Δημοσιεύσεις, App, Αρχεία)
+tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
+    "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (Stable)", "📂 Αρχεία"
+])
 
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
     st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης (Ph.D. Candidate)")
 
 with tab_app:
-    st.header("🔬 Official MakeCode Research Interface", anchor=False)
-    
+    st.header("🔬 Official MakeCode Research Bridge", anchor=False)
     if "messages" not in st.session_state:
         st.session_state.messages = []
-
-    col_set1, col_set2 = st.columns(2)
-    with col_set1:
-        lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
-    with col_set2:
-        action_type = st.radio("Ενέργεια:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
 
     col_in, col_out = st.columns([1, 1], gap="large")
     
     with col_in:
         with st.form(key='research_form', clear_on_submit=True):
-            u_id = st.text_input("User ID:", value="Student_1")
+            u_id = st.text_input("User ID:", value="Researcher_1")
+            action_type = st.radio("Τύπος:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
             prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
-            submit = st.form_submit_button("🚀 Εκτέλεση")
+            submit = st.form_submit_button("🚀 Δημιουργία")
 
     with col_out:
         if submit and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.spinner('⏳ Παραγωγή επίσημου κώδικα...'):
                 try:
-                    # System Prompt για καθαρό κώδικα συμβατό με MakeCode Python
-                    sys_prompt = "Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python. Χρησιμοποίησε τη βιβλιοθήκη 'maqueen'. Χωρίς XML ή κείμενο."
-                    
+                    # System Prompt για καθαρό MicroPython
+                    sys_prompt = "Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python. Χωρίς XML, χωρίς σχόλια."
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
@@ -75,28 +68,26 @@ with tab_app:
                     py_code = response.choices[0].message.content.replace("```python", "").replace("```", "").strip()
                     st.session_state.messages.append({"role": "assistant", "content": py_code})
 
-                    # --- ΠΡΟΒΟΛΗ ΚΩΔΙΚΑ ---
-                    st.markdown("#### 🐍 Generated Code")
+                    st.markdown("#### 🐍 Generated Python Code")
                     st.code(py_code, language='python')
                     
-                    # --- THE OFFICIAL SOLUTION (Link Injection) ---
-                    st.markdown("#### 🧩 Official MakeCode Visualizer")
-                    
-                    # Δημιουργία URL που ανοίγει τον κώδικα απευθείας στον Editor (όπως στην εικόνα 6)
-                    encoded_code = requests.utils.quote(py_code)
-                    makecode_url = f"https://makecode.microbit.org/#pub:_python:{encoded_code}"
+                    # --- Η ΛΥΣΗ ΓΙΑ ΤΟ ΣΦΑΛΜΑ ΔΙΚΤΥΟΥ (URL Protocol) ---
+                    # Χρήση του 'Magic Link' που ανοίγει τον κώδικα απευθείας στον Browser
+                    magic_link = f"https://makecode.microbit.org/#pub:_python:{requests.utils.quote(py_code)}"
                     
                     st.markdown(f"""
-                        <div style="background:#f0f9ff; padding:20px; border-radius:10px; border:1px solid #bae6fd;">
-                            <p>🎯 Ο κώδικας είναι έτοιμος! Για να δείτε τα <b>Blocks</b> και τον <b>Simulator</b>:</p>
-                            <a href="{makecode_url}" target="_blank" class="action-btn">
-                                🚀 ΑΝΟΙΓΜΑ ΣΤΟ OFFICIAL MAKECODE
-                            </a>
+                        <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
+                        <p>✅ Ο κώδικας δημιουργήθηκε! Για να αποφύγετε σφάλματα δικτύου:</p>
+                        <a href="{magic_link}" target="_blank" class="official-btn">
+                            🚀 ΑΝΟΙΓΜΑ ΣΤΟ OFFICIAL MAKECODE
+                        </a>
+                        <p style='margin-top:10px; font-size:12px; color:gray;'>
+                            *Το κουμπί ανοίγει τον αυθεντικό editor σε νέα καρτέλα για 100% σταθερότητα.
+                        </p>
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    # --- SAFE LOGGING (Fix για Screenshot 2 & 3) ---
-                    # Μετατρέπουμε τα πάντα σε String για να αποφύγουμε το Dict error
+                    # --- ΣΤΑΘΕΡΟ LOGGING (Fix για 'dict' error) ---
                     log_entry = {
                         "data": [{
                             "Timestamp": str(datetime.datetime.now()),
@@ -107,11 +98,11 @@ with tab_app:
                         }]
                     }
                     requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("✅ Καταγράφηκε επιτυχώς!")
+                    st.toast("✅ Επιτυχής Καταγραφή!")
 
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
 with tab_data:
-    st.header("Ερευνητικά Δεδομένα", anchor=False)
+    st.header("Βάση Δεδομένων", anchor=False)
     st.link_button("📊 Άνοιγμα Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
