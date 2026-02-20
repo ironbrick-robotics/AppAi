@@ -5,7 +5,7 @@ import requests
 import re
 
 # --- ΡΥΘΜΙΣΕΙΣ ΕΡΕΥΝΑΣ ---
-st.set_page_config(page_title="ironbrick IDE | Plus V2 Official", layout="wide")
+st.set_page_config(page_title="ironbrick IDE | V2 PLUS Recovery", layout="wide")
 
 st.markdown("<style>header {visibility: hidden;} .stExpander { border: 2px solid #00a0dc; border-radius: 8px; }</style>", unsafe_allow_html=True)
 
@@ -14,11 +14,10 @@ try:
         client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
     DB_URL = st.secrets.get("GSHEET_URL", "")
 except Exception as e:
-    st.error(f"Configuration Error: {e}")
+    st.error(f"Config Error: {e}")
 
 MY_CODING_LOGIC = (
-    "Categorize student prompt: L1: Natural Language, L2: Parameters, L3: Logic/Loops, "
-    "L4: Tech Terms (Huskylens/RGB), L5: Debugging. Return only level label."
+    "Categorize: L1: Natural, L2: Params, L3: Logic, L4: Tech, L5: Debug. Return label only."
 )
 
 if "chat_history" not in st.session_state:
@@ -50,9 +49,9 @@ with tab_ide:
             
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             
-            with st.spinner('Παραγωγή Επίσημου Κώδικα V2 PLUS...'):
+            with st.spinner('Σύνταξη επίσημου κώδικα...'):
                 try:
-                    # 1. Κατάταξη
+                    # 1. Ερευνητική Κατάταξη
                     analysis = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": MY_CODING_LOGIC}, {"role": "user", "content": user_input}]
@@ -60,16 +59,18 @@ with tab_ide:
                     current_level = analysis.choices[0].message.content.strip()
 
                     # 2. ΑΥΣΤΗΡΟ ΠΡΩΤΟΚΟΛΛΟ MAQUEEN PLUS V2
-                    # Εδώ ορίζουμε τις επίσημες εντολές ως κανόνες
+                    # Προσθήκη "Gold Standard" παραδειγμάτων για να μην παρεκκλίνει το AI
                     official_v2_sys = (
-                        "You are a dedicated compiler for Maqueen Plus V2. "
-                        "MANDATORY: Use ONLY the following syntax patterns. Do NOT invent methods.\n\n"
-                        "1. Motors: maqueenPlusV2.control_motor(maqueenPlusV2.MyEnumMotor.LEFT_MOTOR, maqueenPlusV2.MyEnumDir.FORWARD, speed)\n"
-                        "2. RGB: maqueenPlusV2.set_rgb_light(maqueenPlusV2.MyEnumRgbLight.R_RGB, maqueenPlusV2.MyEnumColor.RED)\n"
-                        "3. Ultrasonic: maqueenPlusV2.read_ultrasonic(Pin.P13, Pin.P14)\n"
-                        "4. Line Sensors: maqueenPlusV2.read_line_sensor(maqueenPlusV2.MyEnumLineSensor.L1)\n"
-                        "Always start with: from microbit import * \nimport maqueenPlusV2\n\n"
-                        "Strict Rule: NO markdown (```), NO chat, NO comments. ONLY THE CODE."
+                        "You are a code generator for micro:bit Maqueen Plus V2. "
+                        "CRITICAL: You must use the exact library name 'maqueenPlusV2'.\n"
+                        "MANDATORY HEADER:\n"
+                        "from microbit import *\n"
+                        "import maqueenPlusV2\n\n"
+                        "COMMAND TEMPLATES:\n"
+                        "- Forward: maqueenPlusV2.control_motor(maqueenPlusV2.MyEnumMotor.ALL_MOTOR, maqueenPlusV2.MyEnumDir.FORWARD, 100)\n"
+                        "- Stop: maqueenPlusV2.control_motor(maqueenPlusV2.MyEnumMotor.ALL_MOTOR, maqueenPlusV2.MyEnumDir.FORWARD, 0)\n"
+                        "- RGB: maqueenPlusV2.set_rgb_light(maqueenPlusV2.MyEnumRgbLight.R_RGB, maqueenPlusV2.MyEnumColor.RED)\n\n"
+                        "STRICT RULES: No markdown. No comments. No explanations. Only executable code."
                     )
                     
                     code_res = client.chat.completions.create(
@@ -78,8 +79,12 @@ with tab_ide:
                     )
                     
                     raw_code = code_res.choices[0].message.content.strip()
+                    # Καθαρισμός από Markdown και κείμενο
                     clean_code = re.sub(r'```[a-z]*', '', raw_code).replace('```', '').strip()
-                    
+                    # Αφαίρεση τυχόν κειμένου πριν το import
+                    if "from" in clean_code:
+                        clean_code = clean_code[clean_code.find("from"):]
+
                     st.session_state.last_output = clean_code
                     st.markdown(f"**Research Level: {current_level}**")
                     st.code(clean_code, language='python')
@@ -96,7 +101,7 @@ with tab_ide:
                         }]})
                 
                 except Exception as e:
-                    st.error(f"Connection Error: {e}")
+                    st.error(f"Error: {e}")
 
     if st.session_state.last_output:
         with st.expander("💡 Επεξήγηση"):
