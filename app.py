@@ -4,22 +4,37 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v8.6 | PhD Master", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.7 | Educational IDE", page_icon="🎓", layout="wide")
 
-# --- CSS ΓΙΑ ΤΗΝ ΠΛΗΡΗ ΕΠΑΝΑΦΟΡΑ ΤΟΥ SITE ---
+# --- CSS ΓΙΑ ΠΑΡΑΣΤΑΤΙΚΑ BLOCKS & UI ---
 st.markdown("""
     <style>
     header {visibility: hidden;} footer {visibility: hidden;}
     .stTabs [data-baseweb="tab-list"] { gap: 12px; flex-wrap: wrap; }
-    .pub-box {
-        background-color: #ffffff; padding: 15px; border-radius: 10px;
-        border-left: 5px solid #ff4b4b; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
+    
+    /* Scratch-style Blocks με Puzzle 'κουμπώματα' */
+    .block-container { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin-bottom: 20px; }
+    .scratch-block {
+        color: white; padding: 10px 15px; font-weight: bold; font-size: 14px;
+        border-radius: 8px; margin-bottom: 2px; position: relative;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.2); display: block; width: fit-content; min-width: 200px;
     }
-    .official-btn {
-        background-color: #00a0dc; color: white !important; padding: 25px;
-        border-radius: 15px; text-align: center; display: block;
-        text-decoration: none; font-weight: bold; font-size: 22px;
-        margin-top: 20px; border: 3px solid #007bb5;
+    /* Το κούμπωμα (notch) στο πάνω μέρος */
+    .scratch-block::before {
+        content: ""; position: absolute; top: -8px; left: 20px;
+        width: 16px; height: 8px; background: inherit;
+        clip-path: polygon(0% 100%, 20% 0%, 80% 0%, 100% 100%);
+    }
+    /* Χρώματα κατηγοριών */
+    .event { background-color: #FFBF00; color: black; border-radius: 15px 15px 4px 4px; }
+    .control { background-color: #FFAB19; }
+    .motion { background-color: #4C97FF; }
+    .sensor { background-color: #5CB1D6; }
+    .indent { margin-left: 25px; border-left: 6px solid #FFAB19; padding-left: 10px; margin-top: -2px; }
+    
+    .explanation-box {
+        background-color: #f0f7ff; border-left: 5px solid #007bff;
+        padding: 15px; border-radius: 5px; margin-top: 10px; font-style: italic;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -31,78 +46,85 @@ try:
 except:
     st.error("⚠️ Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
 
-# 3. Tabs (Ταυτότητα, Πρόοδος, Δημοσιεύσεις, App, Αρχεία)
-tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
-    "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (Stable)", "📂 Αρχεία"
-])
+# 3. Tabs
+tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 App (Visual IDE)", "📂 Αρχεία"])
 
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
-    st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης (Ph.D. Candidate)")
+    st.info("Εκπαιδευτική Ρομποτική & Τεχνητή Νοημοσύνη (Ph.D. Research Tool)")
 
 with tab_app:
-    st.header("🔬 Official MakeCode Research Bridge", anchor=False)
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "last_ans" not in st.session_state:
+        st.session_state.last_ans = ""
 
     col_in, col_out = st.columns([1, 1], gap="large")
     
     with col_in:
         with st.form(key='research_form', clear_on_submit=True):
-            u_id = st.text_input("User ID:", value="Researcher_1")
-            action_type = st.radio("Τύπος:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
-            prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
+            u_id = st.text_input("User ID:", value="Student_1")
+            lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
+            prompt = st.text_area("Τι θέλεις να κάνει το Maqueen;", height=120)
             submit = st.form_submit_button("🚀 Δημιουργία")
 
     with col_out:
         if submit and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.spinner('⏳ Παραγωγή επίσημου κώδικα...'):
+            with st.spinner('⏳ Σχεδιασμός...'):
                 try:
-                    # System Prompt για καθαρό MicroPython
-                    sys_prompt = "Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python. Χωρίς XML, χωρίς σχόλια."
+                    sys_prompt = (
+                        "Είσαι καθηγητής Maqueen. Δώσε ΠΑΝΤΑ:\n"
+                        "1. PYTHON: [Κώδικας]\n"
+                        "2. BLOCKS: [HTML Blocks με κλάσεις scratch-block και event/control/motion/indent].\n"
+                        "Κάνε τα blocks πολύ παραστατικά."
+                    )
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
                     )
-                    py_code = response.choices[0].message.content.replace("```python", "").replace("```", "").strip()
-                    st.session_state.messages.append({"role": "assistant", "content": py_code})
+                    st.session_state.last_ans = response.choices[0].message.content
+                    ans = st.session_state.last_ans
+                    st.session_state.messages.append({"role": "assistant", "content": ans})
 
-                    st.markdown("#### 🐍 Generated Python Code")
-                    st.code(py_code, language='python')
-                    
-                    # --- Η ΛΥΣΗ ΓΙΑ ΤΟ ΣΦΑΛΜΑ ΔΙΚΤΥΟΥ (URL Protocol) ---
-                    # Χρήση του 'Magic Link' που ανοίγει τον κώδικα απευθείας στον Browser
-                    magic_link = f"https://makecode.microbit.org/#pub:_python:{requests.utils.quote(py_code)}"
-                    
-                    st.markdown(f"""
-                        <div style="padding:20px; border:1px solid #ddd; border-radius:10px; background:#fff;">
-                        <p>✅ Ο κώδικας δημιουργήθηκε! Για να αποφύγετε σφάλματα δικτύου:</p>
-                        <a href="{magic_link}" target="_blank" class="official-btn">
-                            🚀 ΑΝΟΙΓΜΑ ΣΤΟ OFFICIAL MAKECODE
-                        </a>
-                        <p style='margin-top:10px; font-size:12px; color:gray;'>
-                            *Το κουμπί ανοίγει τον αυθεντικό editor σε νέα καρτέλα για 100% σταθερότητα.
-                        </p>
-                        </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # --- ΣΤΑΘΕΡΟ LOGGING (Fix για 'dict' error) ---
-                    log_entry = {
-                        "data": [{
-                            "Timestamp": str(datetime.datetime.now()),
-                            "Student_ID": str(u_id),
-                            "Action": str(action_type),
-                            "Prompt": str(prompt),
-                            "Answer": str(py_code).replace('"', "'")
-                        }]
-                    }
-                    requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("✅ Επιτυχής Καταγραφή!")
+                    if "BLOCKS:" in ans:
+                        parts = ans.split("BLOCKS:")
+                        py_code = parts[0].replace("PYTHON:", "").strip()
+                        html_blocks = parts[1].strip()
+                        
+                        st.markdown("#### 🐍 Κώδικας")
+                        st.code(py_code, language='python' if lang_choice=="MicroPython" else 'cpp')
+                        
+                        st.markdown("#### 🧩 Οπτική Λογική")
+                        st.markdown(f'<div class="block-container">{html_blocks}</div>', unsafe_allow_html=True)
+                        
+                        # LOGGING: ΜΟΝΟ ΚΩΔΙΚΑΣ (Όχι HTML/Blocks)
+                        log_entry = {
+                            "data": [{
+                                "Timestamp": str(datetime.datetime.now()),
+                                "Student_ID": str(u_id),
+                                "Language": lang_choice,
+                                "Prompt": str(prompt),
+                                "Answer": str(py_code).replace('"', "'")
+                            }]
+                        }
+                        requests.post(SHEETDB_URL, json=log_entry)
+                        st.toast("✅ Καταγράφηκε!")
 
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
+    # --- ΚΟΥΜΠΙ ΕΠΕΞΗΓΗΣΗΣ (Εκτός Form για αμεσότητα) ---
+    if st.session_state.last_ans:
+        if st.button("💡 Εξήγησέ μου τον κώδικα"):
+            with st.spinner('📚 Προετοιμασία επεξήγησης...'):
+                explain_prompt = f"Εξήγησε με απλά λόγια σε έναν μαθητή τι κάνει αυτός ο κώδικας:\n{st.session_state.last_ans}"
+                exp_res = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": explain_prompt}]
+                )
+                st.markdown(f'<div class="explanation-box">{exp_res.choices[0].message.content}</div>', unsafe_allow_html=True)
+
 with tab_data:
-    st.header("Βάση Δεδομένων", anchor=False)
+    st.header("Ερευνητικά Δεδομένα", anchor=False)
     st.link_button("📊 Άνοιγμα Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
