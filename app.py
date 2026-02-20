@@ -5,9 +5,7 @@ import requests
 import re
 
 # --- ΡΥΘΜΙΣΕΙΣ ΕΡΕΥΝΑΣ ---
-st.set_page_config(page_title="ironbrick IDE | V2 PLUS Recovery", layout="wide")
-
-st.markdown("<style>header {visibility: hidden;} .stExpander { border: 2px solid #00a0dc; border-radius: 8px; }</style>", unsafe_allow_html=True)
+st.set_page_config(page_title="ironbrick IDE | MicroPython v2 Official", layout="wide")
 
 try:
     if "GROQ_API_KEY" in st.secrets:
@@ -16,9 +14,23 @@ try:
 except Exception as e:
     st.error(f"Config Error: {e}")
 
-MY_CODING_LOGIC = (
-    "Categorize: L1: Natural, L2: Params, L3: Logic, L4: Tech, L5: Debug. Return label only."
-)
+# --- ΕΠΙΣΗΜΟ DOCUMENTATION REFERENCE (v2-docs) ---
+MICROBIT_V2_DOCS = """
+Reference: https://microbit-micropython.readthedocs.io/en/v2-docs/
+Core Principles:
+1. Imports: Always 'from microbit import *'. For Maqueen: 'import maqueenPlusV2'.
+2. Time: Use 'sleep(ms)' for delays (Official MicroPython v2).
+3. Display: Use 'display.show(Image.HAPPY)' or 'display.scroll("text")'.
+4. Sound: Use 'speaker.on()' and 'audio.play(Sound.GIGGLE)' or 'music.play(music.PYTHON)'.
+5. Sensors: 
+   - Logo: 'logo.is_touched()'
+   - Sound: 'microphone.sound_level()'
+6. Maqueen Plus V2 Specific (Wrapper Support):
+   - maqueenPlusV2.control_motor(motor, direction, speed)
+   - maqueenPlusV2.read_ultrasonic(P13, P14)
+"""
+
+MY_CODING_LOGIC = "Categorize: L1: Natural, L2: Params, L3: Logic, L4: Tech, L5: Debug. Return label only."
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -39,7 +51,7 @@ with tab_ide:
         with st.form("input_form"):
             student_id = st.text_input("Κωδικός Μαθητή:", "S01")
             mode = st.radio("Ενέργεια:", ["Νέα Εντολή", "Διορθωση εντολής"], horizontal=True)
-            user_input = st.text_area("Περιγράψτε την αποστολή:", height=150)
+            user_input = st.text_area("Περιγράψτε την αποστολή (v2-docs compliant):", height=150)
             btn = st.form_submit_button("Εκτέλεση")
 
     with col2:
@@ -49,41 +61,33 @@ with tab_ide:
             
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             
-            with st.spinner('Σύνταξη επίσημου κώδικα...'):
+            with st.spinner('Σύνταξη βάσει MicroPython v2 Docs...'):
                 try:
-                    # 1. Ερευνητική Κατάταξη
+                    # 1. Κατάταξη
                     analysis = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": MY_CODING_LOGIC}, {"role": "user", "content": user_input}]
                     )
                     current_level = analysis.choices[0].message.content.strip()
 
-                    # 2. ΑΥΣΤΗΡΟ ΠΡΩΤΟΚΟΛΛΟ MAQUEEN PLUS V2
-                    # Προσθήκη "Gold Standard" παραδειγμάτων για να μην παρεκκλίνει το AI
-                    official_v2_sys = (
-                        "You are a code generator for micro:bit Maqueen Plus V2. "
-                        "CRITICAL: You must use the exact library name 'maqueenPlusV2'.\n"
-                        "MANDATORY HEADER:\n"
-                        "from microbit import *\n"
-                        "import maqueenPlusV2\n\n"
-                        "COMMAND TEMPLATES:\n"
-                        "- Forward: maqueenPlusV2.control_motor(maqueenPlusV2.MyEnumMotor.ALL_MOTOR, maqueenPlusV2.MyEnumDir.FORWARD, 100)\n"
-                        "- Stop: maqueenPlusV2.control_motor(maqueenPlusV2.MyEnumMotor.ALL_MOTOR, maqueenPlusV2.MyEnumDir.FORWARD, 0)\n"
-                        "- RGB: maqueenPlusV2.set_rgb_light(maqueenPlusV2.MyEnumRgbLight.R_RGB, maqueenPlusV2.MyEnumColor.RED)\n\n"
-                        "STRICT RULES: No markdown. No comments. No explanations. Only executable code."
+                    # 2. Παραγωγή Κώδικα (Strict v2 Docs)
+                    v2_sys_prompt = (
+                        f"You are a MicroPython v2 expert for micro:bit and Maqueen Plus V2.\n"
+                        f"STRICT REFERENCE: {MICROBIT_V2_DOCS}\n"
+                        "DIRECTIONS:\n"
+                        "- Use 'sleep()' for pauses as per official v2-docs.\n"
+                        "- Use 'maqueenPlusV2' library for all robot movements.\n"
+                        "- If the user mentions sound or logo, use V2-specific features.\n"
+                        "- OUTPUT ONLY RAW CODE. No markdown, no text."
                     )
                     
                     code_res = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
-                        messages=[{"role": "system", "content": official_v2_sys}] + st.session_state.chat_history
+                        messages=[{"role": "system", "content": v2_sys_prompt}] + st.session_state.chat_history
                     )
                     
                     raw_code = code_res.choices[0].message.content.strip()
-                    # Καθαρισμός από Markdown και κείμενο
                     clean_code = re.sub(r'```[a-z]*', '', raw_code).replace('```', '').strip()
-                    # Αφαίρεση τυχόν κειμένου πριν το import
-                    if "from" in clean_code:
-                        clean_code = clean_code[clean_code.find("from"):]
 
                     st.session_state.last_output = clean_code
                     st.markdown(f"**Research Level: {current_level}**")
@@ -105,7 +109,7 @@ with tab_ide:
 
     if st.session_state.last_output:
         with st.expander("💡 Επεξήγηση"):
-            exp_sys = "Είσαι καθηγητής. Εξήγησε τον κώδικα Maqueen Plus V2 στα Ελληνικά σύντομα."
+            exp_sys = "Είσαι καθηγητής. Εξήγησε τον κώδικα στα Ελληνικά με βάση τις δυνατότητες του micro:bit V2."
             explanation = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "system", "content": exp_sys}, {"role": "user", "content": st.session_state.last_output}]
