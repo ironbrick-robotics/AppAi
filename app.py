@@ -53,6 +53,7 @@ with tab_app:
                         f"Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον καθαρό κώδικα {lang_choice}. "
                         "Μην χρησιμοποιείς Markdown blocks (```), μην δίνεις χαιρετισμούς ή σχόλια. "
                         "Απάντα ΜΟΝΟ με τις εντολές προγραμματισμού."
+                        "Πρέπει να μπορεις να διαβασεις οτι βιβλιοθηκη σου ζητηθει, οπως για παραδειγμα η καμερα huskylens"
                     )
                     
                     # Σύνθεση μηνυμάτων με το ιστορικό
@@ -68,7 +69,7 @@ with tab_app:
                     st.session_state.last_code = clean_code
                     st.session_state.messages.append({"role": "assistant", "content": clean_code})
 
-                    st.markdown(f"#### ⚙️ Κώδικας {lang_choice}")
+                    st.markdown(f"Κώδικας {lang_choice}")
                     st.code(clean_code, language='python' if lang_choice=="MicroPython" else 'cpp')
                     
                     # LOGGING ΣΤΟ GOOGLE SHEET
@@ -103,5 +104,6 @@ with tab_app:
 
 with tab_data:
     st.link_button("Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
+
 
 
