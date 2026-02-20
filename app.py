@@ -4,38 +4,32 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v8.7 | Educational IDE", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.8 | PhD Edition", page_icon="🎓", layout="wide")
 
-# --- CSS ΓΙΑ ΠΑΡΑΣΤΑΤΙΚΑ BLOCKS & UI ---
+# --- CSS ΓΙΑ ΠΑΡΑΣΤΑΤΙΚΑ BLOCKS & CLEAN UI ---
 st.markdown("""
     <style>
     header {visibility: hidden;} footer {visibility: hidden;}
-    .stTabs [data-baseweb="tab-list"] { gap: 12px; flex-wrap: wrap; }
     
-    /* Scratch-style Blocks με Puzzle 'κουμπώματα' */
-    .block-container { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin-bottom: 20px; }
+    /* Scratch-style Blocks */
     .scratch-block {
-        color: white; padding: 10px 15px; font-weight: bold; font-size: 14px;
-        border-radius: 8px; margin-bottom: 2px; position: relative;
-        box-shadow: 0 4px 0 rgba(0,0,0,0.2); display: block; width: fit-content; min-width: 200px;
+        color: white; padding: 12px 18px; font-weight: bold; font-family: 'Arial', sans-serif;
+        border-radius: 8px; margin-bottom: 4px; position: relative;
+        box-shadow: 0 4px 0 rgba(0,0,0,0.2); display: block; width: fit-content; min-width: 220px;
     }
-    /* Το κούμπωμα (notch) στο πάνω μέρος */
     .scratch-block::before {
-        content: ""; position: absolute; top: -8px; left: 20px;
-        width: 16px; height: 8px; background: inherit;
+        content: ""; position: absolute; top: -8px; left: 25px;
+        width: 20px; height: 8px; background: inherit;
         clip-path: polygon(0% 100%, 20% 0%, 80% 0%, 100% 100%);
     }
-    /* Χρώματα κατηγοριών */
     .event { background-color: #FFBF00; color: black; border-radius: 15px 15px 4px 4px; }
     .control { background-color: #FFAB19; }
     .motion { background-color: #4C97FF; }
     .sensor { background-color: #5CB1D6; }
-    .indent { margin-left: 25px; border-left: 6px solid #FFAB19; padding-left: 10px; margin-top: -2px; }
+    .indent { margin-left: 30px; border-left: 6px solid #FFAB19; padding-left: 10px; }
     
-    .explanation-box {
-        background-color: #f0f7ff; border-left: 5px solid #007bff;
-        padding: 15px; border-radius: 5px; margin-top: 10px; font-style: italic;
-    }
+    /* Explanation Styling */
+    .stExpander { border: 2px solid #00a0dc; border-radius: 10px; background-color: #f0f9ff; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -44,20 +38,16 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.error("⚠️ Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
+    st.error("⚠️ Σφάλμα Secrets.")
 
 # 3. Tabs
 tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 App (Visual IDE)", "📂 Αρχεία"])
 
-with tab_info:
-    st.header("Ερευνητικό Υπόμνημα", anchor=False)
-    st.info("Εκπαιδευτική Ρομποτική & Τεχνητή Νοημοσύνη (Ph.D. Research Tool)")
-
 with tab_app:
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    if "last_ans" not in st.session_state:
-        st.session_state.last_ans = ""
+    if "last_py" not in st.session_state:
+        st.session_state.last_py = ""
 
     col_in, col_out = st.columns([1, 1], gap="large")
     
@@ -73,57 +63,49 @@ with tab_app:
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.spinner('⏳ Σχεδιασμός...'):
                 try:
+                    # Πιο αυστηρό System Prompt για αποφυγή του "AI-style" μπερδέματος
                     sys_prompt = (
-                        "Είσαι καθηγητής Maqueen. Δώσε ΠΑΝΤΑ:\n"
-                        "1. PYTHON: [Κώδικας]\n"
-                        "2. BLOCKS: [HTML Blocks με κλάσεις scratch-block και event/control/motion/indent].\n"
-                        "Κάνε τα blocks πολύ παραστατικά."
+                        "Είσαι αυστηρός καθηγητής Maqueen. Απάντα ΜΟΝΟ Ελληνικά.\n"
+                        "Format: PYTHON: [Κώδικας] BLOCKS: [HTML Blocks]\n"
+                        "Μη βάζεις επεξήγηση σε αυτό το στάδιο.\n"
+                        "Χρησιμοποίησε κλάσεις: scratch-block + (event, control, motion, sensor, indent)."
                     )
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
                     )
-                    st.session_state.last_ans = response.choices[0].message.content
-                    ans = st.session_state.last_ans
+                    ans = response.choices[0].message.content
                     st.session_state.messages.append({"role": "assistant", "content": ans})
 
                     if "BLOCKS:" in ans:
                         parts = ans.split("BLOCKS:")
-                        py_code = parts[0].replace("PYTHON:", "").strip()
+                        st.session_state.last_py = parts[0].replace("PYTHON:", "").replace("```python", "").replace("```", "").strip()
                         html_blocks = parts[1].strip()
                         
                         st.markdown("#### 🐍 Κώδικας")
-                        st.code(py_code, language='python' if lang_choice=="MicroPython" else 'cpp')
+                        st.code(st.session_state.last_py, language='python' if lang_choice=="MicroPython" else 'cpp')
                         
                         st.markdown("#### 🧩 Οπτική Λογική")
-                        st.markdown(f'<div class="block-container">{html_blocks}</div>', unsafe_allow_html=True)
+                        st.markdown(html_blocks, unsafe_allow_html=True)
                         
-                        # LOGGING: ΜΟΝΟ ΚΩΔΙΚΑΣ (Όχι HTML/Blocks)
-                        log_entry = {
-                            "data": [{
-                                "Timestamp": str(datetime.datetime.now()),
-                                "Student_ID": str(u_id),
-                                "Language": lang_choice,
-                                "Prompt": str(prompt),
-                                "Answer": str(py_code).replace('"', "'")
-                            }]
-                        }
-                        requests.post(SHEETDB_URL, json=log_entry)
-                        st.toast("✅ Καταγράφηκε!")
-
+                        # LOGGING (Μόνο κώδικας)
+                        requests.post(SHEETDB_URL, json={
+                            "data": [{"Timestamp": str(datetime.datetime.now()), "Student_ID": u_id, "Prompt": prompt, "Answer": st.session_state.last_py}]
+                        })
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
-    # --- ΚΟΥΜΠΙ ΕΠΕΞΗΓΗΣΗΣ (Εκτός Form για αμεσότητα) ---
-    if st.session_state.last_ans:
-        if st.button("💡 Εξήγησέ μου τον κώδικα"):
-            with st.spinner('📚 Προετοιμασία επεξήγησης...'):
-                explain_prompt = f"Εξήγησε με απλά λόγια σε έναν μαθητή τι κάνει αυτός ο κώδικας:\n{st.session_state.last_ans}"
-                exp_res = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": explain_prompt}]
-                )
-                st.markdown(f'<div class="explanation-box">{exp_res.choices[0].message.content}</div>', unsafe_allow_html=True)
+    # --- ΕΠΕΞΗΓΗΣΗ ΣΕ EXPANDER ---
+    if st.session_state.last_py:
+        with st.expander("💡 Χρειάζεσαι βοήθεια; Πάτα εδώ για την επεξήγηση του κώδικα!"):
+            with st.spinner('📚 Μεταφράζω τη λογική...'):
+                # Ξεχωριστό prompt για καθαρή, ελληνική επεξήγηση χωρίς HTML
+                explain_msg = [
+                    {"role": "system", "content": "Είσαι καθηγητής. Εξήγησε τον κώδικα ΜΟΝΟ στα Ελληνικά, απλά και παραστατικά. Μην χρησιμοποιείς HTML ή Blocks στην απάντηση."},
+                    {"role": "user", "content": f"Εξήγησε αυτόν τον κώδικα:\n{st.session_state.last_py}"}
+                ]
+                exp_res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=explain_msg)
+                st.write(exp_res.choices[0].message.content)
 
 with tab_data:
     st.header("Ερευνητικά Δεδομένα", anchor=False)
