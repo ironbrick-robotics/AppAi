@@ -5,7 +5,7 @@ import requests
 import streamlit.components.v1 as components
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v7.9 | Ph.D. Optimized", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.0 | API Integrated", page_icon="🎓", layout="wide")
 
 # --- CSS STYLING ---
 st.markdown("""
@@ -16,6 +16,7 @@ st.markdown("""
         background-color: #ffffff; padding: 15px; border-radius: 10px;
         border-left: 5px solid #ff4b4b; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
     }
+    iframe { border-radius: 10px; border: 1px solid #ccc; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -27,28 +28,20 @@ except:
     st.error("⚠️ Ελέγξτε τα Secrets.")
 
 # 3. Tabs
-tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
-    "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (Full IDE)", "📂 Αρχεία"
-])
+tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 App (MakeCode API)", "📂 Αρχεία"])
 
-# --- TAB 1, 2, 3 (Ταυτότητα & Δημοσιεύσεις) ---
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
     st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης (Ph.D. Candidate)")
 
-with tab_pubs:
-    st.header("Επιστημονικό Έργο", anchor=False)
-    st.markdown('<div class="pub-box"><strong>Competitive Robotics in Education</strong> (ICSE 2025)</div>', unsafe_allow_html=True)
-
-# --- TAB 4: Η ΕΦΑΡΜΟΓΗ (Optimized Logging) ---
 with tab_app:
-    st.header("🔬 AI Robotics Research Interface", anchor=False)
+    st.header("🔬 AI Robotics Research Interface v8.0", anchor=False)
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
     col_set1, col_set2 = st.columns(2)
     with col_set1:
-        lang_choice = st.selectbox("Γλώσσα:", ["MicroPython & Blocks", "Arduino C"])
+        lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
     with col_set2:
         action_type = st.radio("Ενέργεια:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
 
@@ -63,63 +56,42 @@ with tab_app:
     with col_out:
         if submit and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.spinner('⏳ Επεξεργασία...'):
+            with st.spinner('⏳ Επεξεργασία μέσω API...'):
                 try:
-                    sys_prompt = (
-                        "Είσαι ειδικός στο Micro:bit Maqueen. Χρησιμοποίησε XML για Blockly.\n"
-                        "Δώσε ΠΑΝΤΑ: 1. PYTHON: [Κώδικας] 2. BLOCKS: [XML]."
-                    )
+                    # System Prompt εστιασμένο μόνο σε καθαρό κώδικα
+                    sys_prompt = "Είσαι ειδικός στο Micro:bit Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python (MicroPython). Μην βάζεις XML ή κείμενο."
 
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
                     )
-                    ans = response.choices[0].message.content
-                    st.session_state.messages.append({"role": "assistant", "content": ans})
+                    py_code = response.choices[0].message.content.replace("```python", "").replace("```", "").strip()
+                    st.session_state.messages.append({"role": "assistant", "content": py_code})
 
-                    if "BLOCKS:" in ans:
-                        parts = ans.split("BLOCKS:")
-                        py_code = parts[0].replace("PYTHON:", "").replace("```python", "").replace("```", "").strip()
-                        xml_data = parts[1].replace("```xml", "").replace("```", "").strip()
-                        
-                        st.markdown("#### 🐍 MicroPython Code")
-                        st.code(py_code, language='python')
-                        
-                        st.markdown("#### 🧩 Official Blockly Workspace")
-                        # Rendering κανονικά στο App
-                        blockly_html = f"""
-                        <script src="https://unpkg.com/blockly/blockly.min.js"></script>
-                        <script src="https://unpkg.com/blockly/blocks_compressed.js"></script>
-                        <script src="https://unpkg.com/blockly/msg/el.js"></script>
-                        <div id="blocklyDiv" style="height: 450px; width: 100%; border-radius:10px; border:1px solid #ccc;"></div>
-                        <script>
-                            Blockly.Blocks['maqueen_forward'] = {{ init: function() {{
-                                this.appendValueInput("speed").setCheck("Number").appendField("🚀 Κίνηση Εμπρός:");
-                                this.setPreviousStatement(true, null); this.setNextStatement(true, null);
-                                this.setColour(160);
-                            }} }};
-                            var workspace = Blockly.inject('blocklyDiv', {{ readOnly: true, scrollbars: true, theme: Blockly.Themes.Classic }});
-                            var xml = Blockly.utils.xml.textToDom(`{xml_data}`);
-                            Blockly.Xml.domToWorkspace(xml, workspace);
-                        </script>
-                        """
-                        components.html(blockly_html, height=470)
-                    else:
-                        py_code = ans # Για την περίπτωση του Arduino C
-                        st.code(py_code, language='cpp')
+                    # --- ΕΜΦΑΝΙΣΗ ΚΩΔΙΚΑ ---
+                    st.markdown("#### 🐍 MicroPython Code")
+                    st.code(py_code, language='python')
                     
-                    # --- OPTIMIZED LOGGING: ΜΟΝΟ PYTHON ΣΤΟ SHEET ---
+                    # --- MAKECODE API RENDERING (IFRAME) ---
+                    st.markdown("#### 🧩 Visual Blocks (MakeCode API)")
+                    # Δημιουργία URL για το MakeCode Share/Embed
+                    # Χρησιμοποιούμε το επίσημο portal για να δείξουμε τα blocks
+                    makecode_url = "https://makecode.microbit.org/---embed?python=" + requests.utils.quote(py_code)
+                    
+                    components.iframe(makecode_url, height=500)
+                    
+                    # --- LOGGING ---
                     log_entry = {
                         "data": [{
                             "Timestamp": str(datetime.datetime.now()),
                             "Student_ID": str(u_id),
                             "Action": str(action_type),
                             "Prompt": str(prompt),
-                            "Answer": str(py_code) # Εδώ στέλνουμε μόνο τον κώδικα, όχι το XML
+                            "Answer": str(py_code)
                         }]
                     }
                     requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("✅ Καταγράφηκε (Python Only)!")
+                    st.toast("✅ Επιτυχής Καταγραφή!")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
