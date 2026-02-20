@@ -16,7 +16,7 @@ except Exception as e:
 
 # --- ΕΠΙΣΗΜΟ DOCUMENTATION REFERENCE (v2-docs) ---
 MICROBIT_V2_DOCS = """
-Reference: https://microbit-micropython.readthedocs.io/en/v2-docs/
+Reference: https://microbit-micropython.readthedocs.io/en/v2-docs/, https://github.com/DFRobot/pxt-DFRobot_MaqueenPlus_v20, https://dfimg.dfrobot.com/nobody/wiki/715384d8b5c6c7bd66585c5b25cbf5b4.pdf#page=21.05
 Core Principles:
 1. Imports: Always 'from microbit import *'. For Maqueen: 'import maqueenPlusV2'.
 2. Time: Use 'sleep(ms)' for delays (Official MicroPython v2).
@@ -115,3 +115,4 @@ with tab_ide:
                 messages=[{"role": "system", "content": exp_sys}, {"role": "user", "content": st.session_state.last_output}]
             )
             st.write(explanation.choices[0].message.content)
+
