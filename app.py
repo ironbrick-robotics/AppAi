@@ -22,7 +22,7 @@ except:
     st.error("Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
 
 # 3. Δομή Tabs
-tab_app, tab_info, tab_data = st.tabs(["AppIDE", "Files"])
+tab_app, tab_data = st.tabs(["AppIDE", "Files"])
 
 with tab_app:
     # Αρχικοποίηση Ιστορικού (Context)
@@ -103,4 +103,5 @@ with tab_app:
 
 with tab_data:
     st.link_button("Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
+
 
