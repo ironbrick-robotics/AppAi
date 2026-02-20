@@ -148,17 +148,19 @@ with tab_app:
                         st.code(ans.replace("```cpp", "").replace("```", "").strip(), language='cpp')
                     
                     # LOGGING ΜΕ ACTION TYPE
-                    log_data = {
-                        "data": [{
-                            "Timestamp": str(datetime.datetime.now()), 
-                            "Student_ID": u_id, 
-                            "Action": action_type,
-                            "Language": lang_choice,
-                            "Prompt": prompt
-                        }]
-                    }
-                    requests.post(SHEETDB_URL, json=log_data)
-                    st.toast(f"✅ Καταγράφηκε ως {action_type}")
+                    # LOGGING ΜΕ ΟΛΑ ΤΑ ΠΕΔΙΑ (Συμπεριλαμβανομένου του Answer)
+log_data = {
+    "data": [{
+        "Timestamp": str(datetime.datetime.now()), 
+        "Student_ID": u_id, 
+        "Action": action_type,
+        "Language": lang_choice,
+        "Prompt": prompt,
+        "Answer": ans  # <--- Προστέθηκε το πεδίο Answer
+    }]
+}
+requests.post(SHEETDB_URL, json=log_data)
+st.toast(f"✅ Καταγράφηκε επιτυχώς!")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -169,3 +171,4 @@ with tab_data:
 
 st.divider()
 st.caption("PhD ironbrick v7.0 | Advanced Research Analytics & Multi-modal IDE")
+
