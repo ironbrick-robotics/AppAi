@@ -4,7 +4,7 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας (Mobile Friendly & Research Ready)
-st.set_page_config(page_title="Ph.D. Research Portal v7.0", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="Ph.D. Research Portal v7.1", page_icon="🎓", layout="wide")
 
 # --- CSS ΓΙΑ CLEAN INTERFACE & SCRATCH-STYLE BLOCKS ---
 st.markdown("""
@@ -24,7 +24,7 @@ st.markdown("""
         border-left: 5px solid #ff4b4b; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
     }
 
-    /* Scratch Blocks Styling */
+    /* Scratch Blocks Styling (Stable Visual Logic) */
     .scratch-block {
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-weight: bold; font-size: 13px; padding: 8px 12px; margin-bottom: 4px;
@@ -40,6 +40,7 @@ st.markdown("""
     .event { background-color: #FFBF00; border-radius: 15px 15px 4px 4px; color: black; border: 1px solid #E6AC00; } 
     .control { background-color: #FFAB19; border-radius: 4px; border: 1px solid #CF8B17; }
     .motion { background-color: #4C97FF; border-radius: 4px; border: 1px solid #3373CC; }
+    .sensor { background-color: #5CB1D6; border-radius: 4px; border: 1px solid #478BA8; }
     .indent { margin-left: 20px; border-left: 6px solid #FFAB19; padding-left: 5px; margin-top: -2px; }
     
     @media (max-width: 768px) {
@@ -54,22 +55,26 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key_secret)
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.warning("⚠️ Σύνδεση Read-Only. Ελέγξτε τα Secrets.")
+    st.warning("⚠️ Σύνδεση Read-Only. Ελέγξτε τα Secrets (GROQ_API_KEY, GSHEET_URL).")
 
 # 3. Δομή Tabs
 tab_info, tab_progress, tab_pubs, tab_app, tab_data = st.tabs([
     "📖 Ταυτότητα", "📈 Πρόοδος", "📚 Δημοσιεύσεις", "🚀 App (IDE)", "📂 Αρχεία"
 ])
 
+# --- TAB 1: ΤΑΥΤΟΤΗΤΑ ---
 with tab_info:
     st.header("Ερευνητικό Υπόμνημα", anchor=False)
     st.info("Εκπαιδευτική Ρομποτική με Ενσωμάτωση Τεχνητής Νοημοσύνης: Μοντέλα, Μέθοδοι και Επιπτώσεις στη Σύγχρονη Εκπαίδευση")
+    st.write("**Ερευνητής:** PhD Candidate")
 
+# --- TAB 2: ΠΡΟΟΔΟΣ ---
 with tab_progress:
     st.header("Χρονοδιάγραμμα", anchor=False)
-    st.write("- [x] 1ο Έτος: Βιβλιογραφία & Υπόμνημα")
-    st.write("- [x] 2ο Έτος: ironbrick v7.0 (Context-Aware Logging & Action Analytics)")
+    st.write("- [x] 1ο Έτος: Βιβλιογραφική Ανασκόπηση")
+    st.write("- [x] 2ο Έτος: ironbrick v7.1 (Advanced Analytics & Dual-Modal Context)")
 
+# --- TAB 3: ΔΗΜΟΣΙΕΥΣΕΙΣ ---
 with tab_pubs:
     st.header("Επιστημονικό Έργο", anchor=False)
     st.subheader("🌐 Διεθνή Συνέδρια", anchor=False)
@@ -77,21 +82,22 @@ with tab_pubs:
     st.subheader("🏛️ Εθνικά Συνέδρια", anchor=False)
     st.markdown('<div class="pub-box" style="border-left-color: #00a0dc;"><strong>Από τον Αλγόριθμο στη Δημιουργία</strong> (ΔΙΠΑΕ)<br><a href="#">🔗 URL Δημοσίευσης</a></div>', unsafe_allow_html=True)
 
+# --- TAB 4: Η ΕΦΑΡΜΟΓΗ (Advanced Research IDE) ---
 with tab_app:
     st.header("🔬 AI Robotics Research Interface", anchor=False)
     
-    # Αρχικοποίηση Ιστορικού
+    # Διαχείριση Ιστορικού Συνομιλίας
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Settings Row
+    # Settings Row (Mobile Friendly)
     col_set1, col_set2 = st.columns(2)
     with col_set1:
-        lang_choice = st.selectbox("Γλώσσα:", ["MicroPython & Blocks", "Arduino C"])
+        lang_choice = st.selectbox("Γλώσσα Προγραμματισμού:", ["MicroPython & Blocks", "Arduino C"])
     with col_set2:
-        action_type = st.radio("Τύπος Ενέργειας:", ["Νέα Αποστολή", "Διόρθωση / Debugging"], horizontal=True)
+        action_type = st.radio("Τύπος Ενέργειας (για το Log):", ["Νέα Αποστολή", "Διόρθωση / Debugging"], horizontal=True)
 
-    if st.button("🗑️ Καθαρισμός Συνομιλίας"):
+    if st.button("🗑️ Καθαρισμός Ιστορικού"):
         st.session_state.messages = []
         st.rerun()
 
@@ -100,40 +106,44 @@ with tab_app:
     col_in, col_out = st.columns([1, 1], gap="large")
     
     with col_in:
+        st.subheader("📥 Input", anchor=False)
         with st.form(key='research_form', clear_on_submit=True):
             u_id = st.text_input("User ID:", value="Researcher_1")
             prompt = st.text_area("Περιγράψτε την αποστολή ή το πρόβλημα:", height=150)
-            submit = st.form_submit_button("🚀 Εκτέλεση")
+            submit = st.form_submit_button("🚀 Εκτέλεση & Καταγραφή")
 
     with col_out:
+        st.subheader("🖥️ Output", anchor=False)
         if submit and prompt:
-            # Προσθήκη στο ιστορικό
+            # Αποθήκευση ερώτησης στο context
             st.session_state.messages.append({"role": "user", "content": prompt})
             
-            with st.spinner('⏳ Επεξεργασία AI βάσει ιστορικού...'):
+            with st.spinner('⏳ Το AI συνθέτει τον κώδικα...'):
                 try:
-                    # System Prompt με Knowledge Injection & Action Context
+                    # System Prompt με Knowledge Injection & Context Awareness
                     if lang_choice == "MicroPython & Blocks":
                         sys_prompt = (
-                            f"Είσαι καθηγητής Maqueen. Πρόθεση χρήστη: {action_type}.\n"
-                            "Χρησιμοποίησε τη βιβλιοθήκη 'maqueen'.\n"
-                            "Δώσε ΠΑΝΤΑ: 1. PYTHON: [Κώδικας] 2. BLOCKS: [HTML Blocks].\n"
-                            "Παράδειγμα: <div class='scratch-block event'>🏁 Όταν ξεκινήσει</div>"
+                            f"Είσαι καθηγητής Maqueen. Πρόθεση χρήστη: {action_type}. "
+                            "Χρησιμοποίησε ΜΟΝΟ τη βιβλιοθήκη 'maqueen'. "
+                            "Δώσε ΠΑΝΤΑ: 1. PYTHON: [Κώδικας] 2. BLOCKS: [HTML Blocks]. "
+                            "Format Blocks: <div class='scratch-block event'>🏁 Όνομα</div>"
                         )
                     else:
                         sys_prompt = f"Είσαι ειδικός Arduino Maqueen (<DFRobot_Maqueen.h>). Πρόθεση: {action_type}. Δώσε μόνο κώδικα C++."
 
-                    # Σύνθεση μηνυμάτων
-                    api_messages = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
-
+                    # Κλήση API με όλο το ιστορικό
+                    messages_to_send = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
+                    
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
-                        messages=api_messages
+                        messages=messages_to_send
                     )
                     ans = response.choices[0].message.content
+                    
+                    # Αποθήκευση απάντησης στο context
                     st.session_state.messages.append({"role": "assistant", "content": ans})
 
-                    # Καθαρισμός και Προβολή
+                    # Προβολή Αποτελεσμάτων
                     if lang_choice == "MicroPython & Blocks" and "BLOCKS:" in ans:
                         parts = ans.split("BLOCKS:")
                         py_code = parts[0].replace("PYTHON:", "").replace("```python", "").replace("```", "").strip()
@@ -145,30 +155,31 @@ with tab_app:
                         st.markdown(html_blocks, unsafe_allow_html=True)
                     else:
                         st.markdown("#### ⚙️ Arduino C Code")
-                        st.code(ans.replace("```cpp", "").replace("```", "").strip(), language='cpp')
+                        final_cpp = ans.replace("```cpp", "").replace("```", "").strip()
+                        st.code(final_cpp, language='cpp')
                     
-                    # LOGGING ΜΕ ACTION TYPE
-                    # LOGGING ΜΕ ΟΛΑ ΤΑ ΠΕΔΙΑ (Συμπεριλαμβανομένου του Answer)
-log_data = {
-    "data": [{
-        "Timestamp": str(datetime.datetime.now()), 
-        "Student_ID": u_id, 
-        "Action": action_type,
-        "Language": lang_choice,
-        "Prompt": prompt,
-        "Answer": ans  # <--- Προστέθηκε το πεδίο Answer
-    }]
-}
-requests.post(SHEETDB_URL, json=log_data)
-st.toast(f"✅ Καταγράφηκε επιτυχώς!")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                    # ΠΛΗΡΕΣ LOGGING ΣΤΟ GOOGLE SHEETS
+                    log_entry = {
+                        "data": [{
+                            "Timestamp": str(datetime.datetime.now()), 
+                            "Student_ID": u_id, 
+                            "Action": action_type,
+                            "Language": lang_choice,
+                            "Prompt": prompt,
+                            "Answer": ans  # Καταγραφή της πλήρους απάντησης του AI
+                        }]
+                    }
+                    requests.post(SHEETDB_URL, json=log_entry)
+                    st.toast(f"✅ Επιτυχής καταγραφή: {action_type}")
 
+                except Exception as e:
+                    st.error(f"Σφάλμα Επικοινωνίας: {e}")
+
+# --- TAB 5: ΔΕΔΟΜΕΝΑ ---
 with tab_data:
-    st.header("Βάση Δεδομένων", anchor=False)
-    st.write("Στο Google Sheet θα βρείτε τη στήλη 'Action' για τον διαχωρισμό New Task vs Debugging.")
-    st.link_button("📊 Άνοιγμα Database", st.secrets.get("GSHEET_URL_LINK", "#"))
+    st.header("Ερευνητικά Δεδομένα", anchor=False)
+    st.write("Όλες οι αλληλεπιδράσεις (Prompts & Answers) αποθηκεύονται αυτόματα για ανάλυση.")
+    st.link_button("📊 Άνοιγμα Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
 
 st.divider()
-st.caption("PhD ironbrick v7.0 | Advanced Research Analytics & Multi-modal IDE")
-
+st.caption("PhD ironbrick v7.1 | Interaction Analytics | DFRobot Ecosystem Support")
