@@ -4,7 +4,7 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v9.6 | Research IDE", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="IDE v9.6", page_icon="🎓", layout="wide")
 
 # --- CSS ΓΙΑ CLEAN INTERFACE ---
 st.markdown("""
@@ -19,10 +19,10 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.error("⚠️ Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
+    st.error("Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
 
 # 3. Δομή Tabs
-tab_app, tab_info, tab_data = st.tabs(["🚀 Εργαστήριο", "📖 Ταυτότητα", "📂 Αρχεία"])
+tab_app, tab_info, tab_data = st.tabs(["AppIDE", "Files"])
 
 with tab_app:
     # Αρχικοποίηση Ιστορικού (Context)
@@ -39,14 +39,14 @@ with tab_app:
             lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
             action_type = st.radio("Τύπος Ενέργειας:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
             prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
-            submit = st.form_submit_button("🚀 Εκτέλεση")
+            submit = st.form_submit_button("Εκτέλεση")
 
     with col_out:
         if submit and prompt:
             # Προσθήκη στο ιστορικό για μνήμη
             st.session_state.messages.append({"role": "user", "content": prompt})
             
-            with st.spinner('⏳ Επεξεργασία...'):
+            with st.spinner('Επεξεργασία...'):
                 try:
                     # Αυστηρό System Prompt για αποφυγή γλωσσικών λαθών
                     sys_prompt = (
@@ -83,15 +83,15 @@ with tab_app:
                         }]
                     }
                     requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("✅ Καταγράφηκε!")
+                    st.toast("Αποθηκεύτηκε!")
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
     # --- ΕΠΕΞΗΓΗΣΗ ΚΩΔΙΚΑ (Αυστηρά Ελληνικά) ---
     if st.session_state.last_code:
         st.write("---")
-        with st.expander("💡 Επεξήγηση Λειτουργίας (Καθηγητής)"):
-            with st.spinner('📚 Ανάλυση...'):
+        with st.expander("Επεξήγηση κώδικα"):
+            with st.spinner('Ανάλυση...'):
                 explain_msg = [
                     {"role": "system", "content": "Είσαι καθηγητής ρομποτικής. Εξήγησε τον κώδικα ΜΟΝΟ στα Ελληνικά. "
                                                  "Απαγορεύεται αυστηρά η χρήση οποιασδήποτε άλλης γλώσσας. "
@@ -101,9 +101,6 @@ with tab_app:
                 exp_res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=explain_msg)
                 st.write(exp_res.choices[0].message.content)
 
-with tab_info:
-    st.header("Ερευνητικό Υπόμνημα", anchor=False)
-    st.info("Μελέτη αλληλεπίδρασης Μαθητή-ΤΝ στον προγραμματισμό Maqueen.")
-
 with tab_data:
-    st.link_button("📊 Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
+    st.link_button("Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
+
