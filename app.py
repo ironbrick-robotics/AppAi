@@ -3,107 +3,91 @@ from openai import OpenAI
 import datetime
 import requests
 
-# 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="IDE v9.6", page_icon="🎓", layout="wide")
+# --- ΕΡΕΥΝΗΤΙΚΟ ΠΕΡΙΒΑΛΛΟΝ IRONBRICK ---
+# Υλοποίηση: [Το Ονοματεπώνυμό Σου]
+# Σκοπός: Μελέτη μετάβασης από Blocks σε Text-based Code
 
-# --- CSS ΓΙΑ CLEAN INTERFACE ---
+st.set_page_config(page_title="ironbrick Research IDE", layout="wide")
+
+# Custom CSS για το interface της έρευνας
 st.markdown("""
     <style>
-    header {visibility: hidden;} footer {visibility: hidden;}
-    .stExpander { border: 1px solid #00a0dc; border-radius: 10px; background-color: #f0f9ff; }
+    header {visibility: hidden;}
+    .stExpander { border: 2px solid #00a0dc; border-radius: 8px; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Σύνδεση με Groq & SheetDB
+# Σύνδεση με τα API (Secrets)
 try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
-    SHEETDB_URL = st.secrets["GSHEET_URL"]
+    DB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.error("Ελέγξτε τα Secrets (GROQ_API_KEY & GSHEET_URL).")
+    st.error("Connection Error: Check API Configuration.")
 
-# 3. Δομή Tabs
-tab_app, tab_data = st.tabs(["AppIDE", "Files"])
+# Ορισμός του δικού σου Coding Scheme για την ανάλυση
+MY_CODING_LOGIC = (
+    "Analyze the student's prompt and categorize it into the following levels: "
+    "L1: Simple natural language, L2: Parameters/Values, L3: Logic/Loops, "
+    "L4: Technical Terminology, L5: Debugging/Iteration. "
+    "Return only the label (e.g., L3)."
+)
 
-with tab_app:
-    # Αρχικοποίηση Ιστορικού (Context)
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "last_code" not in st.session_state:
-        st.session_state.last_code = ""
+# Κύριο Interface
+tab_ide, tab_logs = st.tabs(["💻 IDE", "📊 Data Access"])
 
-    col_in, col_out = st.columns([1, 1], gap="large")
+with tab_ide:
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
     
-    with col_in:
-        with st.form(key='research_form', clear_on_submit=True):
-            u_id = st.text_input("User ID:", value="Student_1")
-            lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
-            action_type = st.radio("Τύπος Ενέργειας:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
-            prompt = st.text_area("Περιγράψτε την αποστολή:", height=150)
-            submit = st.form_submit_button("Εκτέλεση")
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        with st.form("input_form"):
+            student_id = st.text_input("Student Code:", "S01")
+            mode = st.selectbox("Task Type:", ["New Mission", "Correction"])
+            user_input = st.text_area("Περιγράψτε την αποστολή:", height=150)
+            btn = st.form_submit_button("Generate Code")
 
-    with col_out:
-        if submit and prompt:
-            # Προσθήκη στο ιστορικό για μνήμη
-            st.session_state.messages.append({"role": "user", "content": prompt})
+    with col2:
+        if btn and user_input:
+            st.session_state.chat_history.append({"role": "user", "content": user_input})
             
-            with st.spinner('Επεξεργασία...'):
-                try:
-                    # Αυστηρό System Prompt για αποφυγή γλωσσικών λαθών
-                    sys_prompt = (
-                        f"Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον καθαρό κώδικα {lang_choice}. "
-                        "Μην χρησιμοποιείς Markdown blocks (```), μην δίνεις χαιρετισμούς ή σχόλια. "
-                        "Απάντα ΜΟΝΟ με τις εντολές προγραμματισμού."
-                        "Πρέπει να μπορεις να διαβασεις οτι βιβλιοθηκη σου ζητηθει, οπως για παραδειγμα η καμερα huskylens"
-                    )
-                    
-                    # Σύνθεση μηνυμάτων με το ιστορικό
-                    api_messages = [{"role": "system", "content": sys_prompt}] + st.session_state.messages
-                    
-                    response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=api_messages
-                    )
-                    
-                    # Καθαρισμός κώδικα
-                    clean_code = response.choices[0].message.content.replace("```python", "").replace("```cpp", "").replace("```", "").strip()
-                    st.session_state.last_code = clean_code
-                    st.session_state.messages.append({"role": "assistant", "content": clean_code})
+            # 1. Αυτόματη Κωδικοποίηση (Research Metric)
+            analysis = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": MY_CODING_LOGIC}, {"role": "user", "content": user_input}]
+            )
+            current_level = analysis.choices[0].message.content.strip()
 
-                    st.markdown(f"Κώδικας {lang_choice}")
-                    st.code(clean_code, language='python' if lang_choice=="MicroPython" else 'cpp')
-                    
-                    # LOGGING ΣΤΟ GOOGLE SHEET
-                    log_entry = {
-                        "data": [{
-                            "Timestamp": str(datetime.datetime.now()),
-                            "Student_ID": str(u_id),
-                            "Action": str(action_type),
-                            "Language": str(lang_choice),
-                            "Prompt": str(prompt),
-                            "Answer": str(clean_code).replace('"', "'")
-                        }]
-                    }
-                    requests.post(SHEETDB_URL, json=log_entry)
-                    st.toast("Αποθηκεύτηκε!")
-                except Exception as e:
-                    st.error(f"Σφάλμα: {e}")
+            # 2. Παραγωγή Κώδικα Maqueen
+            maqueen_prompt = "Expert Maqueen coder. Clean code only, no explanations, no markdown blocks."
+            messages = [{"role": "system", "content": maqueen_prompt}] + st.session_state.chat_history
+            code_res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=messages)
+            final_code = code_res.choices[0].message.content.strip()
+            
+            st.session_state.last_output = final_code
+            st.code(final_code, language='python')
 
-    # --- ΕΠΕΞΗΓΗΣΗ ΚΩΔΙΚΑ (Αυστηρά Ελληνικά) ---
-    if st.session_state.last_code:
-        st.write("---")
-        with st.expander("Επεξήγηση κώδικα"):
-            with st.spinner('Ανάλυση...'):
-                explain_msg = [
-                    {"role": "system", "content": "Είσαι καθηγητής ρομποτικής. Εξήγησε τον κώδικα ΜΟΝΟ στα Ελληνικά. "
-                                                 "Απαγορεύεται αυστηρά η χρήση οποιασδήποτε άλλης γλώσσας. "
-                                                 "Μίλα απλά και παραστατικά στον μαθητή."},
-                    {"role": "user", "content": f"Εξήγησε αυτόν τον κώδικα:\n{st.session_state.last_code}"}
-                ]
-                exp_res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=explain_msg)
-                st.write(exp_res.choices[0].message.content)
+            # 3. Αυτόματο Logging στο Google Sheet
+            log_data = {
+                "data": [{
+                    "Timestamp": str(datetime.datetime.now()),
+                    "Student_ID": student_id,
+                    "Action": mode,
+                    "Coding_Level": current_level,
+                    "Prompt": user_input,
+                    "Code": final_code
+                }]
+            }
+            requests.post(DB_URL, json=log_data)
+            st.toast(f"Logged as {current_level}")
 
-with tab_data:
-    st.link_button("Google Sheets", st.secrets.get("GSHEET_URL_LINK", "#"))
-
-
-
+    # Παιδαγωγική Ανατροφοδότηση
+    if "last_output" in st.session_state:
+        with st.expander("💡 Επεξήγηση Κώδικα για τον Μαθητή"):
+            pedagogical_prompt = "Είσαι καθηγητής ρομποτικής. Εξήγησε τον κώδικα στα Ελληνικά με απλά λόγια."
+            explanation = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "system", "content": pedagogical_prompt}, {"role": "user", "content": st.session_state.last_output}]
+            )
+            st.write(explanation.choices[0].message.content)
