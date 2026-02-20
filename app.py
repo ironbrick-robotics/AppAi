@@ -4,32 +4,14 @@ import datetime
 import requests
 
 # 1. Ρύθμιση Σελίδας
-st.set_page_config(page_title="ironbrick v8.8 | PhD Edition", page_icon="🎓", layout="wide")
+st.set_page_config(page_title="ironbrick v8.9 | Research Edition", page_icon="🎓", layout="wide")
 
-# --- CSS ΓΙΑ ΠΑΡΑΣΤΑΤΙΚΑ BLOCKS & CLEAN UI ---
+# --- CSS ΓΙΑ CLEAN RESEARCH UI ---
 st.markdown("""
     <style>
     header {visibility: hidden;} footer {visibility: hidden;}
-    
-    /* Scratch-style Blocks */
-    .scratch-block {
-        color: white; padding: 12px 18px; font-weight: bold; font-family: 'Arial', sans-serif;
-        border-radius: 8px; margin-bottom: 4px; position: relative;
-        box-shadow: 0 4px 0 rgba(0,0,0,0.2); display: block; width: fit-content; min-width: 220px;
-    }
-    .scratch-block::before {
-        content: ""; position: absolute; top: -8px; left: 25px;
-        width: 20px; height: 8px; background: inherit;
-        clip-path: polygon(0% 100%, 20% 0%, 80% 0%, 100% 100%);
-    }
-    .event { background-color: #FFBF00; color: black; border-radius: 15px 15px 4px 4px; }
-    .control { background-color: #FFAB19; }
-    .motion { background-color: #4C97FF; }
-    .sensor { background-color: #5CB1D6; }
-    .indent { margin-left: 30px; border-left: 6px solid #FFAB19; padding-left: 10px; }
-    
-    /* Explanation Styling */
     .stExpander { border: 2px solid #00a0dc; border-radius: 10px; background-color: #f0f9ff; }
+    .stTabs [data-baseweb="tab-list"] { gap: 12px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -38,10 +20,14 @@ try:
     client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
     SHEETDB_URL = st.secrets["GSHEET_URL"]
 except:
-    st.error("⚠️ Σφάλμα Secrets.")
+    st.error("⚠️ Σφάλμα σύνδεσης. Ελέγξτε τα Secrets.")
 
 # 3. Tabs
-tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 App (Visual IDE)", "📂 Αρχεία"])
+tab_info, tab_app, tab_data = st.tabs(["📖 Ταυτότητα", "🚀 App (AI Tutor)", "📂 Δεδομένα"])
+
+with tab_info:
+    st.header("Ερευνητικό Υπόμνημα", anchor=False)
+    st.info("Μελέτη της αλληλεπίδρασης Μαθητή-ΤΝ στον Προγραμματισμό Ρομποτικών Συστημάτων")
 
 with tab_app:
     if "messages" not in st.session_state:
@@ -55,53 +41,50 @@ with tab_app:
         with st.form(key='research_form', clear_on_submit=True):
             u_id = st.text_input("User ID:", value="Student_1")
             lang_choice = st.selectbox("Γλώσσα:", ["MicroPython", "Arduino C"])
-            prompt = st.text_area("Τι θέλεις να κάνει το Maqueen;", height=120)
-            submit = st.form_submit_button("🚀 Δημιουργία")
+            action_type = st.radio("Ενέργεια:", ["Νέα Αποστολή", "Διόρθωση"], horizontal=True)
+            prompt = st.text_area("Περιγράψτε τι θέλετε να κάνει το ρομπότ:", height=150)
+            submit = st.form_submit_button("🚀 Παραγωγή Κώδικα")
 
     with col_out:
         if submit and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
-            with st.spinner('⏳ Σχεδιασμός...'):
+            with st.spinner('⏳ Επεξεργασία...'):
                 try:
-                    # Πιο αυστηρό System Prompt για αποφυγή του "AI-style" μπερδέματος
-                    sys_prompt = (
-                        "Είσαι αυστηρός καθηγητής Maqueen. Απάντα ΜΟΝΟ Ελληνικά.\n"
-                        "Format: PYTHON: [Κώδικας] BLOCKS: [HTML Blocks]\n"
-                        "Μη βάζεις επεξήγηση σε αυτό το στάδιο.\n"
-                        "Χρησιμοποίησε κλάσεις: scratch-block + (event, control, motion, sensor, indent)."
-                    )
+                    # Αυστηρό prompt για παραγωγή μόνο κώδικα
+                    sys_prompt = "Είσαι ειδικός Maqueen. Δώσε ΜΟΝΟ τον κώδικα Python ή C. Μην συμπεριλάβεις κανένα άλλο κείμενο."
                     response = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": sys_prompt}] + st.session_state.messages
                     )
-                    ans = response.choices[0].message.content
-                    st.session_state.messages.append({"role": "assistant", "content": ans})
+                    st.session_state.last_py = response.choices[0].message.content.replace("```python", "").replace("```cpp", "").replace("```", "").strip()
+                    st.session_state.messages.append({"role": "assistant", "content": st.session_state.last_py})
 
-                    if "BLOCKS:" in ans:
-                        parts = ans.split("BLOCKS:")
-                        st.session_state.last_py = parts[0].replace("PYTHON:", "").replace("```python", "").replace("```", "").strip()
-                        html_blocks = parts[1].strip()
-                        
-                        st.markdown("#### 🐍 Κώδικας")
-                        st.code(st.session_state.last_py, language='python' if lang_choice=="MicroPython" else 'cpp')
-                        
-                        st.markdown("#### 🧩 Οπτική Λογική")
-                        st.markdown(html_blocks, unsafe_allow_html=True)
-                        
-                        # LOGGING (Μόνο κώδικας)
-                        requests.post(SHEETDB_URL, json={
-                            "data": [{"Timestamp": str(datetime.datetime.now()), "Student_ID": u_id, "Prompt": prompt, "Answer": st.session_state.last_py}]
-                        })
+                    st.markdown("#### 🐍 Παραγόμενος Κώδικας")
+                    st.code(st.session_state.last_py, language='python' if lang_choice=="MicroPython" else 'cpp')
+                    
+                    # LOGGING ΓΙΑ ΤΟ ΑΡΘΡΟ
+                    log_entry = {
+                        "data": [{
+                            "Timestamp": str(datetime.datetime.now()),
+                            "Student_ID": str(u_id),
+                            "Action": str(action_type),
+                            "Language": str(lang_choice),
+                            "Prompt": str(prompt),
+                            "Answer": str(st.session_state.last_py).replace('"', "'")
+                        }]
+                    }
+                    requests.post(SHEETDB_URL, json=log_entry)
+                    st.toast("✅ Καταγράφηκε!")
                 except Exception as e:
                     st.error(f"Σφάλμα: {e}")
 
-    # --- ΕΠΕΞΗΓΗΣΗ ΣΕ EXPANDER ---
+    # --- ΕΠΕΞΗΓΗΣΗ (Ανοίγει μόνο αν ζητηθεί) ---
     if st.session_state.last_py:
-        with st.expander("💡 Χρειάζεσαι βοήθεια; Πάτα εδώ για την επεξήγηση του κώδικα!"):
-            with st.spinner('📚 Μεταφράζω τη λογική...'):
-                # Ξεχωριστό prompt για καθαρή, ελληνική επεξήγηση χωρίς HTML
+        st.write("---")
+        with st.expander("💡 Χρειάζεσαι βοήθεια για να καταλάβεις τον κώδικα;"):
+            with st.spinner('📚 Προετοιμασία επεξήγησης...'):
                 explain_msg = [
-                    {"role": "system", "content": "Είσαι καθηγητής. Εξήγησε τον κώδικα ΜΟΝΟ στα Ελληνικά, απλά και παραστατικά. Μην χρησιμοποιείς HTML ή Blocks στην απάντηση."},
+                    {"role": "system", "content": "Είσαι καθηγητής. Εξήγησε τον κώδικα ΜΟΝΟ στα Ελληνικά, απλά και παραστατικά. Μην χρησιμοποιείς αγγλικά ή άλλες γλώσσες στην επεξήγηση."},
                     {"role": "user", "content": f"Εξήγησε αυτόν τον κώδικα:\n{st.session_state.last_py}"}
                 ]
                 exp_res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=explain_msg)
