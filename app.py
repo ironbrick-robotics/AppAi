@@ -78,7 +78,16 @@ with tab_ide:
 
                     st.markdown(f"**Research Level: {auto_level}**")
                     st.code(clean_code, language='python')
-
+                    
+                    # ΒΗΜΑ 4: ΠΑΙΔΑΓΩΓΙΚΗ ΒΟΗΘΕΙΑ (Scaffolding Mode)
+                    with st.expander("💡 Επεξήγηση & Βοήθεια", expanded=True):
+                        help_sys = "Είσαι καθηγητής ρομποτικής. Εξήγησε σύντομα στα Ελληνικά τι κάνει ο παραπάνω κώδικας και δώσε μια συμβουλή για το επόμενο βήμα."
+                        help_res = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[{"role": "system", "content": help_sys}, {"role": "user", "content": f"Κώδικας: {clean_code}"}]
+                        )
+                        st.write(help_res.choices[0].message.content)
+                    
                     # ΒΗΜΑ 3: LOGGING ΣΤΟ GOOGLE SHEET
                     if DB_URL:
                         requests.post(DB_URL, json={"data": [{
@@ -91,5 +100,6 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
