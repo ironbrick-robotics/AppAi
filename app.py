@@ -60,7 +60,7 @@ with tab_ide:
             
             with st.spinner('Αναμονή...'):
                 try:
-                    # ΒΗΜΑ 1: ΑΥΤΟΜΑΤΗ ΚΑΤΑΤΑΞΗ 
+                    # Level L1-L5
                     class_sys = f"You are an educational researcher. Classify the prompt into one level using ONLY this rubric:\n{my_rubric}\nReturn ONLY the label (e.g., L3)."
                     class_res = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
@@ -68,7 +68,7 @@ with tab_ide:
                     )
                     auto_level = class_res.choices[0].message.content.strip()
 
-                    # ΒΗΜΑ 2: ΠΑΡΑΓΩΓΗ ΚΩΔΙΚΑ 
+                    # Δημιουργία κώδικα
                     v2_sys = f"{my_behavior}\nReference Docs: {my_knowledge}\nSTRICT RULE: Only raw code, no markdown, no comments."
                     code_res = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
@@ -76,19 +76,19 @@ with tab_ide:
                     )
                     clean_code = re.sub(r'```[a-z]*', '', code_res.choices[0].message.content.strip()).replace('```', '').strip()
 
-                    st.markdown(f"**Research Level: {auto_level}**")
+                    st.markdown(f"Κώδικας")
                     st.code(clean_code, language='python')
                     
-                    # ΒΗΜΑ 4: ΠΑΙΔΑΓΩΓΙΚΗ ΒΟΗΘΕΙΑ (Scaffolding Mode)
-                    with st.expander("💡 Επεξήγηση & Βοήθεια", expanded=True):
-                        help_sys = "Είσαι καθηγητής ρομποτικής. Εξήγησε σύντομα στα Ελληνικά τι κάνει ο παραπάνω κώδικας και δώσε μια συμβουλή για το επόμενο βήμα."
+                    # Επεξήγηση & Βοήθεια
+                    with st.expander("Βοήθεια", expanded=True):
+                        help_sys = "Είσαι καθηγητής ρομποτικής. Εξήγησε σύντομα στα Ελληνικά και μονο στα Ελληνικά τι κάνει ο παραπάνω κώδικας και δώσε μια συμβουλή για το επόμενο βήμα. Πρόσεξε την σύνταξη σου και τον λόγο σου, καθώς θέλω να είναι απλός και κατανοητός για τα παιδιά"
                         help_res = client.chat.completions.create(
                             model="llama-3.3-70b-versatile",
                             messages=[{"role": "system", "content": help_sys}, {"role": "user", "content": f"Κώδικας: {clean_code}"}]
                         )
                         st.write(help_res.choices[0].message.content)
                     
-                    # ΒΗΜΑ 3: LOGGING ΣΤΟ GOOGLE SHEET
+                    # Αποθήκευση στο Google Sheet
                     if DB_URL:
                         requests.post(DB_URL, json={"data": [{
                             "Timestamp": str(datetime.datetime.now()),
@@ -100,6 +100,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
