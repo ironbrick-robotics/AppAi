@@ -1,0 +1,6 @@
+OFFICIAL DOCUMENTATION:
+https://microbit-micropython.readthedocs.io/en/v2-docs/
+
+- Use MicroPython v2 (sleep, display, speaker).
+- Use maqueenPlusV2 or maqueen library as needed.
+- Always include: from microbit import *
