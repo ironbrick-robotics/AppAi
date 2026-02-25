@@ -54,10 +54,9 @@ with tab_ide:
         if btn and user_input:
             st.session_state.chat_history.append({"role": "user", "content": user_input})
             
-            # load files .txt
-            my_rubric = load_research_file("rubric.txt")
-            my_knowledge = load_research_file("knowledge.txt")
-            my_behavior = load_research_file("behavior.txt")
+            my_rubric = load_research_file("rubric.txt", "Categorize L1 to L5.")
+            my_knowledge = load_research_file("knowledge.txt", "Use MicroPython v2.")
+            my_behavior = load_research_file("behavior.txt", "Be a professional teacher.")
             
             with st.spinner('Αναμονή...'):
                 try:
@@ -92,4 +91,5 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
