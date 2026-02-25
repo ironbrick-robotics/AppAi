@@ -1,5 +1,6 @@
 OFFICIAL DOCUMENTATION:
 https://microbit-micropython.readthedocs.io/en/v2-docs/
+https://github.com/ThomasDuvinage/DFRobot-Maqueenplus-Python
 
 - Use MicroPython v2 (sleep, display, speaker).
 - Use maqueenPlusV2 or maqueen library as needed.
