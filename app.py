@@ -28,7 +28,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 # Tabs
-tab_ide, tab_config, tab_exersices, tab_pre, tab_post = st.tabs(["AppIDE", "Help", "Pre Test", "Post Test"])
+tab_ide, tab_config, tab_exersices, tab_pre, tab_post = st.tabs(["AppIDE", "Help", "Pre Test", "Post Test", "Exersices"])
 
 with tab_exersices:
     st.subheader("Ασκήσεις ανά μάθημα")
@@ -115,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
