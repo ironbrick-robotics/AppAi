@@ -32,15 +32,11 @@ tab_ide, tab_config, tab_pre, tab_post = st.tabs(["AppIDE", "Help", "Pre Test", 
 
 with tab_pre:
     st.subheader("Αρχική Αξιολόγηση")
-    st.info("Παρακαλώ συμπληρώστε το παρακάτω τεστ πριν ξεκινήσετε την άσκηση.")
-    # Αντικατάστησε το URL με το δικό σου Google Form Link
     pre_test_url = "https://forms.gle/wHkXG48y6xwWJV929"
     components.iframe(pre_test_url, height=800, scrolling=True)
 
 with tab_post:
     st.subheader("Τελική Αξιολόγηση")
-    st.success("Ολοκληρώσατε τις ασκήσεις; Συμπληρώστε το τελικό τεστ για να ολοκληρώσετε τη συνεδρία.")
-    # Αντικατάστησε το URL με το δικό σου Google Form Link
     post_test_url = "https://docs.google.com/forms/d/e/YOUR_POST_TEST_ID/viewform?embedded=true"
     components.iframe(post_test_url, height=800, scrolling=True)
     
@@ -115,6 +111,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
