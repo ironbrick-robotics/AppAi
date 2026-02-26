@@ -48,7 +48,7 @@ with tab_config:
     col_r, col_k, col_b = st.columns(3)
     with col_r:
         st.subheader("Rubric (L1-L5)")
-        st.text_area("rubric.txt", load_research_file("rubric.txt", "No rubric found."), height=200, disabled=True)
+        st.text_area("rubric.txt", load_research_file("rubric.txt", "No rubric found."), height=500, disabled=True)
     with col_k:
         st.subheader("Knowledge Base")
         st.text_area("knowledge.txt", load_research_file("knowledge.txt", "No docs found."), height=200, disabled=True)
@@ -115,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
