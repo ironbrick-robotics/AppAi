@@ -4,18 +4,19 @@ import datetime
 import requests
 import re
 import os
+import streamlit.components.v1 as components
 
-# Ονομασία Εφαρμογής - 
 st.set_page_config(page_title="AppIDE", layout="wide")
+st.title("AppIDE: LLM-Based Robotics Tutor")
 
-# Συνάρτηση ανάγνωσης από αρχεία txt
+# Ανάγνωση από αρχεία txt
 def load_research_file(filename, default_text):
     if os.path.exists(filename):
         with open(filename, "r", encoding="utf-8") as f:
             return f.read()
     return default_text
 
-# Σύνδεση με API - GROQ 
+# Σύνδεση με API/GROQ 
 try:
     if "GROQ_API_KEY" in st.secrets:
         client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
@@ -27,8 +28,22 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 # Tabs
-tab_ide, tab_config = st.tabs(["AppIDE", "Help"])
+tab_ide, tab_config, tab_pre, tab_post = st.tabs(["AppIDE", "Help", "Pre Test", "Post Test"])
 
+with tab_pre:
+    st.subheader("Αρχική Αξιολόγηση")
+    st.info("Παρακαλώ συμπληρώστε το παρακάτω τεστ πριν ξεκινήσετε την άσκηση.")
+    # Αντικατάστησε το URL με το δικό σου Google Form Link
+    pre_test_url = "https://forms.gle/wHkXG48y6xwWJV929"
+    components.iframe(pre_test_url, height=800, scrolling=True)
+
+with tab_post:
+    st.subheader("Τελική Αξιολόγηση")
+    st.success("Ολοκληρώσατε τις ασκήσεις; Συμπληρώστε το τελικό τεστ για να ολοκληρώσετε τη συνεδρία.")
+    # Αντικατάστησε το URL με το δικό σου Google Form Link
+    post_test_url = "https://docs.google.com/forms/d/e/YOUR_POST_TEST_ID/viewform?embedded=true"
+    components.iframe(post_test_url, height=800, scrolling=True)
+    
 with tab_config:    
     col_r, col_k, col_b = st.columns(3)
     with col_r:
@@ -100,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
