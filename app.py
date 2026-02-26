@@ -84,12 +84,16 @@ with tab_ide:
                     auto_level = class_res.choices[0].message.content.strip()
 
                     # Δημιουργία κώδικα
-                    v2_sys = f"{my_behavior}\nReference Docs: {my_knowledge}\nSTRICT RULE: Only raw code, no markdown, no comments."
+                   
+                    v2_sys = f"{my_behavior}\nReference Docs: {my_knowledge}\nSTRICT RULE: Output ONLY MicroPython code. No explanations, no introductory text, no markdown code blocks, no comments. Start directly with 'from microbit import *'."
                     code_res = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[{"role": "system", "content": v2_sys}] + st.session_state.chat_history
                     )
-                    clean_code = re.sub(r'```[a-z]*', '', code_res.choices[0].message.content.strip()).replace('```', '').strip()
+                    # Πιο "επιθετικός" καθαρισμός κώδικα
+                    raw_output = code_res.choices[0].message.content.strip()
+                    # Αφαιρεί τα backticks και τις λέξεις 'python' ή 'micropython' αν υπάρχουν
+                    clean_code = re.sub(r'```(?:python|micropython|)?', '', raw_output, flags=re.IGNORECASE).replace('```', '').strip()
 
                     st.markdown(f"Κώδικας")
                     st.code(clean_code, language='python')
@@ -120,6 +124,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
