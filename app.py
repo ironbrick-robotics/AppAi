@@ -41,7 +41,7 @@ with tab_post:
     components.iframe(post_test_url, height=800, scrolling=True)
 
 with tab_exersices:
-    st.subheader("Ασκήσεις ανά μάθημα")
+    st.subheader("Ασκήσεις")
     st.text_area("excersices.txt", load_research_file("excersices.txt", "No excersices found."), height=200, disabled=True)
 
 with tab_config:    
@@ -115,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
