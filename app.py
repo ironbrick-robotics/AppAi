@@ -42,7 +42,7 @@ with tab_post:
 
 with tab_exersices:
     st.subheader("Ασκήσεις")
-    st.text_area("excersices.txt", load_research_file("excersices.txt", "No excersices found."), height=200, disabled=True)
+    st.text_area("excersices.txt", load_research_file("excersices.txt", "No excersices found."), height=1200, disabled=True)
 
 with tab_config:    
     col_r, col_k, col_b = st.columns(3)
@@ -115,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
