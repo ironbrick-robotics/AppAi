@@ -94,8 +94,7 @@ with tab_ide:
                     st.markdown(f"Κώδικας")
                     st.code(clean_code, language='python')
                     
-                    
-                   # Επεξήγηση & Βοήθεια
+                    # Επεξήγηση & Βοήθεια
                     with st.expander("Βοήθεια", expanded=True):
                         # Δυναμικό system prompt ανάλογα με την ενέργεια
                         if mode == "Διόρθωση":
@@ -108,7 +107,7 @@ with tab_ide:
                             messages=[{"role": "system", "content": help_sys}, {"role": "user", "content": f"Prompt μαθητή: {user_input}\nΤελικός Κώδικας: {clean_code}"}]
                         )
                         st.write(help_res.choices[0].message.content)
-                    
+                   
                     # Αποθήκευση στο Google Sheet
                     if DB_URL:
                         requests.post(DB_URL, json={"data": [{
@@ -121,6 +120,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
