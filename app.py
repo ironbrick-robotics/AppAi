@@ -94,14 +94,20 @@ with tab_ide:
                     st.markdown(f"Κώδικας")
                     st.code(clean_code, language='python')
                     
-                    # Επεξήγηση & Βοήθεια
-                    with st.expander("Βοήθεια", expanded=True):
-                        help_sys = "Είσαι καθηγητής ρομποτικής. Εξήγησε σύντομα στα Ελληνικά και μονο στα Ελληνικά τι κάνει ο παραπάνω κώδικας και δώσε μια συμβουλή για το επόμενο βήμα. Πρόσεξε την σύνταξη σου και τον λόγο σου, καθώς θέλω να είναι απλός και κατανοητός για τα παιδιά"
-                        help_res = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
-                            messages=[{"role": "system", "content": help_sys}, {"role": "user", "content": f"Κώδικας: {clean_code}"}]
-                        )
-                        st.write(help_res.choices[0].message.content)
+                    
+                   # Επεξήγηση & Βοήθεια
+                    with st.expander("Βοήθεια", expanded=True):
+                        # Δυναμικό system prompt ανάλογα με την ενέργεια
+                        if mode == "Διόρθωση":
+                            help_sys = f"{my_behavior}\nΕίσαι καθηγητής ρομποτικής. Ο μαθητής ζήτησε διόρθωση. Εξήγησε αναλυτικά ΠΟΥ ήταν το λάθος στον προηγούμενο κώδικα (π.χ. κεφαλαία γράμματα, εσοχές, λάθος εντολή) και ΓΙΑΤΙ η νέα έκδοση είναι σωστή. Μίλα απλά στα Ελληνικά για παιδιά."
+                        else:
+                            help_sys = f"{my_behavior}\nΕίσαι καθηγητής ρομποτικής. Εξήγησε σύντομα στα Ελληνικά τι κάνει ο παραπάνω κώδικας και δώσε μια συμβουλή για το επόμενο βήμα. Μίλα απλά για παιδιά."
+                        
+                        help_res = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[{"role": "system", "content": help_sys}, {"role": "user", "content": f"Prompt μαθητή: {user_input}\nΤελικός Κώδικας: {clean_code}"}]
+                        )
+                        st.write(help_res.choices[0].message.content)
                     
                     # Αποθήκευση στο Google Sheet
                     if DB_URL:
@@ -115,6 +121,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
