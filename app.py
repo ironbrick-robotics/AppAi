@@ -30,10 +30,6 @@ if "chat_history" not in st.session_state:
 # Tabs
 tab_ide, tab_config, tab_exersices, tab_pre, tab_post = st.tabs(["AppIDE", "Help", "Pre Test", "Post Test", "Exersices"])
 
-with tab_exersices:
-    st.subheader("Ασκήσεις ανά μάθημα")
-    st.text_area("excersices.txt", load_research_file("excersices.txt", "No excersices found."), height=200, disabled=True)
-
 with tab_pre:
     st.subheader("Αρχική Αξιολόγηση")
     pre_test_url = "https://forms.gle/wHkXG48y6xwWJV929"
@@ -43,7 +39,11 @@ with tab_post:
     st.subheader("Τελική Αξιολόγηση")
     post_test_url = "https://forms.gle/V5AW1eTAFRHEiaBs5"
     components.iframe(post_test_url, height=800, scrolling=True)
-    
+
+with tab_exersices:
+    st.subheader("Ασκήσεις ανά μάθημα")
+    st.text_area("excersices.txt", load_research_file("excersices.txt", "No excersices found."), height=200, disabled=True)
+
 with tab_config:    
     col_r, col_k, col_b = st.columns(3)
     with col_r:
@@ -115,6 +115,7 @@ with tab_ide:
                         }]})
                 except Exception as e:
                     st.error(f"Error: {e}")
+
 
 
 
