@@ -9,9 +9,11 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE & Portal", layout="wide")
+st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
-# --- ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) ---
+# ==========================================
+# 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
+# ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
@@ -39,13 +41,13 @@ def check_google_sheet_user(username, password):
     except Exception as e:
         pass
         
-    # Fallback αν δεν διαβάστηκε το Sheet αλλά δίνεις τον σωστό κωδικό διαχειριστή
+    # Fallback διαχειριστής
     if username == "admin" and password == "admin2026!":
         return "admin"
         
     return None
 
-# Αν δεν έχει κάνει login, δείχνει τη φόρμα σύνδεσης
+# Φόρμα Σύνδεσης
 if not st.session_state.logged_in:
     st.title("🔐 Είσοδος στην Εφαρμογή")
     with st.form("login_form"):
@@ -54,13 +56,11 @@ if not st.session_state.logged_in:
         login_btn = st.form_submit_button("Είσοδος")
         
         if login_btn:
-            # 1. Έλεγχος για τον βασικό χρήστη tutor
             if input_user == "argykoyr" and input_pass == "ai_agent":
                 st.session_state.logged_in = True
                 st.session_state.user_role = "tutor"
                 st.rerun()
             else:
-                # 2. Έλεγχος από το Google Sheet ή το fallback
                 role = check_google_sheet_user(input_user, input_pass)
                 if role:
                     st.session_state.logged_in = True
@@ -70,21 +70,69 @@ if not st.session_state.logged_in:
                     st.error("Λάθος Username ή Password!")
     st.stop()
 
-# Κουμπί αποσύνδεσης στο πλαϊνό μενού
+# Πλαϊνό μενού αποσύνδεσης
 if st.sidebar.button("Αποσύνδεση"):
     st.session_state.logged_in = False
     st.session_state.user_role = None
     st.rerun()
 
 
-# --- ΠΕΡΙΒΑΛΛΟΝ 1: ADMIN / ΝΕΟΣ ΚΩΔΙΚΑΣ (Hello World) ---
+# ==========================================
+# 2. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS)
+# ==========================================
 if st.session_state.user_role == "admin":
-    st.title("Hello World")
-    st.write("Καλώς ήρθες στο νέο περιβάλλον διαχειριστή! Εδώ μπορείς να αρχίσεις να γράφεις τον νέο σου κώδικα.")
-    # Γράψτε τον νέο κώδικα εδώ...
+    st.title("🛠️ Admin Portal & Database Management")
+    st.write("Διαχείριση δεδομένων και πινάκων του Google Sheet **DB_ROBOTICS**.")
+
+    # Σύνδεση με το Google Sheet για το Admin Panel
+    @st.cache_resource
+    def get_admin_sheet(sheet_name):
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        if "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        else:
+            creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        client = gspread.authorize(creds)
+        return client.open("DB_ROBOTICS").worksheet(sheet_name)
+
+    # Οργάνωση του Admin σε καρτέλες για μέγιστη καθαρότητα
+    admin_tab1, admin_tab2 = st.tabs(["📂 Προβολή Δεδομένων", "➕ Προσθήκη / Επεξεργασία"])
+
+    with admin_tab1:
+        st.subheader("Δεδομένα από την καρτέλα 'data'")
+        try:
+            # Παίρνουμε τα δεδομένα από την καρτέλα 'data' του DB_ROBOTICS
+            admin_sheet = get_admin_sheet("data")
+            rows = admin_sheet.get_all_records()
+            if rows:
+                df_admin = pd.DataFrame(rows)
+                st.dataframe(df_admin, use_container_width=True)
+            else:
+                st.info("Η καρτέλα είναι προς το παρόν άδεια.")
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
+
+    with admin_tab2:
+        st.subheader("Προσθήκη νέας εγγραφής στη βάση")
+        with st.form("admin_add_form"):
+            new_col1 = st.text_input("Πεδίο 1 (π.χ. Όνομα)")
+            new_col2 = st.text_input("Πεδίο 2 (π.χ. Τιμή / Σχόλιο)")
+            submitted = st.form_submit_button("Καταχώρηση στη Βάση")
+            
+            if submitted:
+                try:
+                    admin_sheet = get_admin_sheet("data")
+                    admin_sheet.append_row([new_col1, new_col2])
+                    st.success("Η εγγραφή αποθηκεύτηκε επιτυχώς στο Google Sheet!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Σφάλμα αποθήκευσης: {e}")
 
 
-# --- ΠΕΡΙΒΑΛΛΟΝ 2: TUTOR (Ο παλιός κώδικας του AppIDE) ---
+# ==========================================
+# 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
+# ==========================================
 elif st.session_state.user_role == "tutor":
     st.title("AppIDE: LLM-Based Robotics Tutor")
 
@@ -94,7 +142,6 @@ elif st.session_state.user_role == "tutor":
                 return f.read()
         return default_text
 
-    # Σύνδεση με API/GROQ 
     try:
         if "GROQ_API_KEY" in st.secrets:
             client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=st.secrets["GROQ_API_KEY"])
