@@ -93,16 +93,16 @@ if st.session_state.user_role == "admin":
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         else:
             creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+        
         client = gspread.authorize(creds)
         return client.open("DB_ROBOTICS").worksheet(sheet_name)
 
-    # Οργάνωση του Admin σε καρτέλες για μέγιστη καθαρότητα
+    # Oργάνωση του Admin σε καρτέλες
     admin_tab1, admin_tab2 = st.tabs(["📂 Προβολή Δεδομένων", "➕ Προσθήκη / Επεξεργασία"])
 
     with admin_tab1:
         st.subheader("Δεδομένα από την καρτέλα 'data'")
         try:
-            # Παίρνουμε τα δεδομένα από την καρτέλα 'data' του DB_ROBOTICS
             admin_sheet = get_admin_sheet("data")
             rows = admin_sheet.get_all_records()
             if rows:
@@ -128,7 +128,6 @@ if st.session_state.user_role == "admin":
                     st.rerun()
                 except Exception as e:
                     st.error(f"Σφάλμα αποθήκευσης: {e}")
-
 
 # ==========================================
 # 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
