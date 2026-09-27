@@ -1,54 +1,47 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from google.oauth2 import service_account
-from openai import OpenAI
-import datetime
-import requests
-import re
+import time
+import unicodedata
+from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
+import io
 import os
+import re
+import requests
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
-# ΣΥΓΧΡΟΝΗ ΚΑΙ ΑΛΑΝΘΑΣΤΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS
+# 1. ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΑΚΡΙΒΩΣ ΟΠΩΣ ΣΤΗΝ 1Η ΕΦΑΡΜΟΓΗ)
 # ==========================================
-
 @st.cache_resource
 def get_gspread_client():
-    try:
-        if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
-            creds_dict = dict(st.secrets["connections"]["gsheets"])
-        elif "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            if "private_key" in creds_dict:
-                # Καθαρισμός του κλειδιού από τυχόν περιττά εισαγωγικά ή διπλά \n
-                pk = str(creds_dict["private_key"]).strip()
-                if pk.startswith('"') and pk.endswith('"'):
-                    pk = pk[1:-1]
-                elif pk.startswith("'") and pk.endswith("'"):
-                    pk = pk[1:-1]
-                creds_dict["private_key"] = pk.replace("\\n", "\n")
-        else:
-            return None
-            
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
-        return gspread.authorize(creds)
-    except Exception as e:
-        st.error(f"Σφάλμα αυθεντικοποίησης Google: {e}")
-        return None
-        
+    creds_dict = {
+        "type": st.secrets["connections"]["gsheets"]["type"],
+        "project_id": st.secrets["connections"]["gsheets"]["project_id"],
+        "private_key_id": st.secrets["connections"]["gsheets"]["private_key_id"],
+        "private_key": st.secrets["connections"]["gsheets"]["private_key"].replace("\\n", "\n"),
+        "client_email": st.secrets["connections"]["gsheets"]["client_email"],
+        "client_id": st.secrets["connections"]["gsheets"]["client_id"],
+        "auth_uri": st.secrets["connections"]["gsheets"]["auth_uri"],
+        "token_uri": st.secrets["connections"]["gsheets"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["connections"]["gsheets"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["connections"]["gsheets"]["client_x509_cert_url"]
+    }
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    return gspread.authorize(creds)
+
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
-    if client:
-        return client.open("DB_ROBOTICS").worksheet("db_products")
-    return None
-    
+    return client.open("DB_ROBOTICS").worksheet("db_products")
+
+
 # ==========================================
-# 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
+# 2. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -58,16 +51,15 @@ def check_google_sheet_user(username, password):
     """Ελέγχει τα στοιχεία σύνδεσης από το Google Sheet DB_ROBOTICS -> tab DB_user"""
     try:
         client = get_gspread_client()
-        if client:
-            sheet = client.open("DB_ROBOTICS").worksheet("DB_user")
-            records = sheet.get_all_records()
-            
-            for row in records:
-                u = str(row.get("username", row.get("Username", ""))).strip()
-                p = str(row.get("password", row.get("Password", ""))).strip()
-                r = str(row.get("role", row.get("Role", "admin"))).strip()
-                if u == username and p == password:
-                    return r
+        sheet = client.open("DB_ROBOTICS").worksheet("DB_user")
+        records = sheet.get_all_records()
+        
+        for row in records:
+            u = str(row.get("username", row.get("Username", ""))).strip()
+            p = str(row.get("password", row.get("Password", ""))).strip()
+            r = str(row.get("role", row.get("Role", "admin"))).strip()
+            if u == username and p == password:
+                return r
     except Exception as e:
         pass
         
@@ -108,7 +100,7 @@ if st.sidebar.button("Αποσύνδεση"):
 
 
 # ==========================================
-# 2. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS -> db_products)
+# 3. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS -> db_products)
 # ==========================================
 if st.session_state.user_role == "admin":
     st.title("🛠️ Admin Portal: Διαχείριση Εξοπλισμού")
@@ -127,15 +119,12 @@ if st.session_state.user_role == "admin":
     # 1. Προβολή τρεχόντων προϊόντων
     try:
         sheet = get_products_sheet()
-        if sheet:
-            records = sheet.get_all_records()
-            if records:
-                df_products = pd.DataFrame(records)
-                st.dataframe(df_products, use_container_width=True)
-            else:
-                st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
+        records = sheet.get_all_records()
+        if records:
+            df_products = pd.DataFrame(records)
+            st.dataframe(df_products, use_container_width=True)
         else:
-            st.warning("Δεν κατέστη δυνατή η σύνδεση με το Google Sheet. Ελέγξτε τα Secrets.")
+            st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
     except Exception as e:
         st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
@@ -163,13 +152,10 @@ if st.session_state.user_role == "admin":
                 if p_id:
                     try:
                         sheet = get_products_sheet()
-                        if sheet:
-                            sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
-                            st.success("Το προϊόν προστέθηκε επιτυχώς!")
-                            st.cache_resource.clear()
-                            st.rerun()
-                        else:
-                            st.error("Σφάλμα σύνδεσης με τη βάση.")
+                        sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
+                        st.success("Το προϊόν προστέθηκε επιτυχώς!")
+                        st.cache_resource.clear()
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
@@ -190,21 +176,18 @@ if st.session_state.user_role == "admin":
                 if edit_id:
                     try:
                         sheet = get_products_sheet()
-                        if sheet:
-                            cell = sheet.find(edit_id)
-                            if cell:
-                                row_num = cell.row
-                                sheet.update_cell(row_num, 2, edit_company)
-                                sheet.update_cell(row_num, 3, edit_name)
-                                sheet.update_cell(row_num, 4, edit_qty)
-                                sheet.update_cell(row_num, 5, edit_year)
-                                st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
-                                st.cache_resource.clear()
-                                st.rerun()
-                            else:
-                                st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
+                        cell = sheet.find(edit_id)
+                        if cell:
+                            row_num = cell.row
+                            sheet.update_cell(row_num, 2, edit_company)
+                            sheet.update_cell(row_num, 3, edit_name)
+                            sheet.update_cell(row_num, 4, edit_qty)
+                            sheet.update_cell(row_num, 5, edit_year)
+                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
+                            st.cache_resource.clear()
+                            st.rerun()
                         else:
-                            st.error("Σφάλμα σύνδεσης με τη βάση.")
+                            st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
                     except Exception as e:
                         st.error(f"Σφάλμα ενημέρωσης: {e}")
                 else:
@@ -212,7 +195,7 @@ if st.session_state.user_role == "admin":
 
 
 # ==========================================
-# 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
+# 4. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
 elif st.session_state.user_role == "tutor":
     st.title("AppIDE: LLM-Based Robotics Tutor")
@@ -321,3 +304,4 @@ elif st.session_state.user_role == "tutor":
                             }]})
                     except Exception as e:
                         st.error(f"Error: {e}")
+                        
