@@ -1,36 +1,27 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from openai import OpenAI
 import datetime
 import requests
 import re
 import os
 import streamlit.components.v1 as components
-import json
 
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
-# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΑΠΟ SECRETS GCP_JSON)
+# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΜΕΣΩ STREAMLIT SECRETS)
 # ==========================================
 @st.cache_resource
 def get_gspread_client():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    if "GCP_JSON" in st.secrets:
-        creds_dict = json.loads(st.secrets["GCP_JSON"])
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    else:
-        # Fallback τοπικό αρχείο αν τρέχει τοπικά
-        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-    return gspread.authorize(creds)
+    # Το gspread διαβάζει αυτόματα το [gcp_service_account] από τα st.secrets
+    return gspread.service_account(params=st.secrets["gcp_service_account"])
 
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
-
 
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
