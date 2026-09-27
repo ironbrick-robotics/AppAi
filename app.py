@@ -14,6 +14,7 @@ st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 # ==========================================
 # ΣΥΓΧΡΟΝΗ ΚΑΙ ΑΛΑΝΘΑΣΤΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS
 # ==========================================
+
 @st.cache_resource
 def get_gspread_client():
     try:
@@ -22,7 +23,13 @@ def get_gspread_client():
         elif "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
             if "private_key" in creds_dict:
-                creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+                # Καθαρισμός του κλειδιού από τυχόν περιττά εισαγωγικά ή διπλά \n
+                pk = str(creds_dict["private_key"]).strip()
+                if pk.startswith('"') and pk.endswith('"'):
+                    pk = pk[1:-1]
+                elif pk.startswith("'") and pk.endswith("'"):
+                    pk = pk[1:-1]
+                creds_dict["private_key"] = pk.replace("\\n", "\n")
         else:
             return None
             
@@ -32,7 +39,7 @@ def get_gspread_client():
     except Exception as e:
         st.error(f"Σφάλμα αυθεντικοποίησης Google: {e}")
         return None
-
+        
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
