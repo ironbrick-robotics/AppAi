@@ -109,23 +109,45 @@ if st.sidebar.button("Αποσύνδεση"):
 if st.session_state.user_role == "admin":
     
     # Κεντρικός τίτλος ενότητας
-    st.title("🛠️ Admin Portal: Εξοπλισμός Ρομποτικής")
-    st.write("Διαχείριση προϊόντων στην καρτέλα **db_products** του Google Sheet **DB_ROBOTICS**.")
+    st.title("Εξοπλισμός Ρομποτικής")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
-        # Κουμπί ανανέωσης δεδομένων
+        st.header("📦 Εξοπλισμός Ρομποτικής")
+        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες διαχείρισης:")
+
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            if st.button("➕ Εισαγωγή Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "insert"
+                st.rerun()
+        with col_m2:
+            if st.button("✏️ Επεξεργασία Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "edit"
+                st.rerun()
+        with col_m3:
+            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
+                st.session_state.admin_subpage = "list"
+                st.rerun()
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "list":
+        if st.button("⬅️ Επιστροφή στο Μενού"):
+            st.session_state.admin_subpage = "menu"
+            st.rerun()
+
         col_ref1, col_ref2 = st.columns([3, 1])
         with col_ref2:
             if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
                 st.cache_resource.clear()
                 st.rerun()
 
-        st.header("📦 Εξοπλισμός")
+        st.subheader("📋 Εξοπλισμός Ρομποτικής: Λίστα Εξοπλισμού")
         
-        # Προβολή τρεχόντων προϊόντων
         try:
             sheet = get_products_sheet()
             records = sheet.get_all_records()
@@ -137,25 +159,11 @@ if st.session_state.user_role == "admin":
         except Exception as e:
             st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
-        st.markdown("---")
-        st.subheader("Επιλογή Ενέργειας")
-
-        # Κουμπιά πλοήγησης σε ξεχωριστές σελίδες
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            if st.button("➕ Εισαγωγή Προιόντος", use_container_width=True):
-                st.session_state.admin_subpage = "insert"
-                st.rerun()
-        with col_btn2:
-            if st.button("✏️ Επεξεργασία Προιόντος", use_container_width=True):
-                st.session_state.admin_subpage = "edit"
-                st.rerun()
-
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΕΙΣΑΓΩΓΗ ΝΕΟΥ ΠΡΟΪΟΝΤΟΣ
+    # ΣΕΛΙΔΑ Γ: ΕΙΣΑΓΩΓΗ ΝΕΟΥ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert":
-        if st.button("⬅️ Επιστροφή στον Εξοπλισμό"):
+        if st.button("⬅️ Επιστροφή στο Μενού"):
             st.session_state.admin_subpage = "menu"
             st.rerun()
 
@@ -177,7 +185,7 @@ if st.session_state.user_role == "admin":
                         sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
                         st.success("Το προϊόν προστέθηκε επιτυχώς!")
                         st.cache_resource.clear()
-                        st.session_state.admin_subpage = "menu"
+                        st.session_state.admin_subpage = "list"
                         st.rerun()
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
@@ -185,15 +193,22 @@ if st.session_state.user_role == "admin":
                     st.warning("Το Product ID είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Γ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
+    # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit":
-        if st.button("⬅️ Επιστροφή στον Εξοπλισμό"):
+        if st.button("⬅️ Επιστροφή στο Μενού"):
             st.session_state.admin_subpage = "menu"
             st.rerun()
 
         st.subheader("✏️ Εξοπλισμός Ρομποτικής: Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
         
+        try:
+            sheet = get_products_sheet()
+            records = sheet.get_all_records()
+            product_ids = [str(r.get('product_id', r.get('Product ID', r.get('id', '')))) for r in records] if records else []
+        except:
+            product_ids = []
+
         with st.form("edit_form"):
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
             edit_company = st.text_input("Νέα Εταιρεία")
@@ -216,7 +231,7 @@ if st.session_state.user_role == "admin":
                             sheet.update_cell(row_num, 5, edit_year)
                             st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
                             st.cache_resource.clear()
-                            st.session_state.admin_subpage = "menu"
+                            st.session_state.admin_subpage = "list"
                             st.rerun()
                         else:
                             st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
