@@ -10,15 +10,27 @@ import os
 import streamlit.components.v1 as components
 import json
 
+st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+
+# ==========================================
+# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΑΠΟ SECRETS GCP_JSON)
+# ==========================================
+@st.cache_resource
+def get_gspread_client():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    if "GCP_JSON" in st.secrets:
+        creds_dict = json.loads(st.secrets["GCP_JSON"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    else:
+        # Fallback τοπικό αρχείο αν τρέχει τοπικά
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    return gspread.authorize(creds)
+
 @st.cache_resource
 def get_products_sheet():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    # Διαβάζει το JSON απευθείας από τα secrets ως string και το κάνει dictionary
-    creds_dict = json.loads(st.secrets["GCP_JSON"])
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    client = gspread.authorize(creds)
+    client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
-st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+
 
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
@@ -30,14 +42,7 @@ if "logged_in" not in st.session_state:
 def check_google_sheet_user(username, password):
     """Ελέγχει τα στοιχεία σύνδεσης από το Google Sheet DB_ROBOTICS -> tab DB_user"""
     try:
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        else:
-            creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-        
-        client = gspread.authorize(creds)
+        client = get_gspread_client()
         sheet = client.open("DB_ROBOTICS").worksheet("DB_user")
         records = sheet.get_all_records()
         
@@ -93,20 +98,7 @@ if st.session_state.user_role == "admin":
     st.title("🛠️ Admin Portal: Διαχείριση Εξοπλισμού")
     st.write("Διαχείριση προϊόντων στην καρτέλα **db_products** του Google Sheet **DB_ROBOTICS**.")
 
-    # Σύνδεση με το Google Sheet (καρτέλα db_products)
-    @st.cache_resource
-    def get_products_sheet():
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        if "gcp_service_account" in st.secrets:
-            creds_dict = dict(st.secrets["gcp_service_account"])
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-        else:
-            creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-        
-        client = gspread.authorize(creds)
-        return client.open("DB_ROBOTICS").worksheet("db_products")
-
-    # --- ΚΟΥΜΠΙ ΑΝΑΝΕΩΣΗΣ ΔΕΔΟΜΕΝΩΝ (Για να μην ξεφεύγουμε με τα αιτήματα στη Google) ---
+    # --- ΚΟΥΜΠΙ ΑΝΑΝΕΩΣΗΣ ΔΕΔΟΜΕΝΩΝ ---
     col_ref1, col_ref2 = st.columns([3, 1])
     with col_ref2:
         if st.button("🔄 Ανανέωση Δεδομένων"):
@@ -130,7 +122,7 @@ if st.session_state.user_role == "admin":
 
     st.markdown("---")
 
-    # 2. Επιλογή ενέργειας (Ανοίγει διαφορετική φόρμα/«σελίδα» επιλογής)
+    # 2. Επιλογή ενέργειας (Εισαγωγή ή Επεξεργασία)
     action = st.radio(
         "Επιλέξτε ενέργεια διαχείρισης:", 
         ["Επιλέξτε...", "➕ Εισαγωγή Νέου Προιόντος", "✏️ Επεξεργασία Υπάρχοντος Προιόντος"],
