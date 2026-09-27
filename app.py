@@ -78,15 +78,15 @@ if st.sidebar.button("Αποσύνδεση"):
 
 
 # ==========================================
-# 2. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS)
+# 2. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS -> db_products)
 # ==========================================
 if st.session_state.user_role == "admin":
-    st.title("🛠️ Admin Portal & Database Management")
-    st.write("Διαχείριση δεδομένων και πινάκων του Google Sheet **DB_ROBOTICS**.")
+    st.title("🛠️ Admin Portal: Διαχείριση Εξοπλισμού")
+    st.write("Διαχείριση προϊόντων στην καρτέλα **db_products** του Google Sheet **DB_ROBOTICS**.")
 
-    # Σύνδεση με το Google Sheet για το Admin Panel
+    # Σύνδεση με το Google Sheet (καρτέλα db_products)
     @st.cache_resource
-    def get_admin_sheet(sheet_name):
+    def get_products_sheet():
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
         if "gcp_service_account" in st.secrets:
             creds_dict = dict(st.secrets["gcp_service_account"])
@@ -95,40 +95,82 @@ if st.session_state.user_role == "admin":
             creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
         
         client = gspread.authorize(creds)
-        return client.open("DB_ROBOTICS").worksheet(sheet_name)
+        return client.open("DB_ROBOTICS").worksheet("db_products")
 
-    # Oργάνωση του Admin σε καρτέλες
-    admin_tab1, admin_tab2 = st.tabs(["📂 Προβολή Δεδομένων", "➕ Προσθήκη / Επεξεργασία"])
+    # Ενότητα: Εξοπλισμός (Χωρισμένη σε καρτέλες για Εισαγωγή και Επεξεργασία)
+    st.header("📦 Εξοπλισμός")
+    
+    # 1. Προβολή τρεχόντων προϊόντων
+    try:
+        sheet = get_products_sheet()
+        records = sheet.get_all_records()
+        if records:
+            df_products = pd.DataFrame(records)
+            st.dataframe(df_products, use_container_width=True)
+        else:
+            st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
+    except Exception as e:
+        st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
-    with admin_tab1:
-        st.subheader("Δεδομένα από την καρτέλα 'data'")
-        try:
-            admin_sheet = get_admin_sheet("data")
-            rows = admin_sheet.get_all_records()
-            if rows:
-                df_admin = pd.DataFrame(rows)
-                st.dataframe(df_admin, use_container_width=True)
-            else:
-                st.info("Η καρτέλα είναι προς το παρόν άδεια.")
-        except Exception as e:
-            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
+    # 2. Φόρμες Εισαγωγής και Επεξεργασίας σε 2 στήλες
+    col_insert, col_edit = st.columns(2)
 
-    with admin_tab2:
-        st.subheader("Προσθήκη νέας εγγραφής στη βάση")
-        with st.form("admin_add_form"):
-            new_col1 = st.text_input("Πεδίο 1 (π.χ. Όνομα)")
-            new_col2 = st.text_input("Πεδίο 2 (π.χ. Τιμή / Σχόλιο)")
-            submitted = st.form_submit_button("Καταχώρηση στη Βάση")
+    with col_insert:
+        st.subheader("➕ Εισαγωγή Προιόντος")
+        with st.form("insert_form"):
+            p_id = st.text_input("Product ID")
+            p_company = st.text_input("Εταιρεία (Company)")
+            p_name = st.text_input("Όνομα Προιόντος (Name)")
+            p_qty = st.number_input("Ποσότητα (Quantity)", min_value=0, step=1)
+            p_year = st.number_input("Έτος (Year)", min_value=2000, max_value=2100, value=2026, step=1)
             
-            if submitted:
-                try:
-                    admin_sheet = get_admin_sheet("data")
-                    admin_sheet.append_row([new_col1, new_col2])
-                    st.success("Η εγγραφή αποθηκεύτηκε επιτυχώς στο Google Sheet!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Σφάλμα αποθήκευσης: {e}")
+            insert_btn = st.form_submit_button("Εισαγωγή")
+            
+            if insert_btn:
+                if p_id:
+                    try:
+                        sheet = get_products_sheet()
+                        # Προσθήκη νέας γραμμής με τη σειρά των πεδίων
+                        sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
+                        st.success("Το προϊόν προστέθηκε επιτυχώς!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Σφάλμα εισαγωγής: {e}")
+                else:
+                    st.warning("Το Product ID είναι υποχρεωτικό.")
 
+    with col_edit:
+        st.subheader("✏️ Επεξεργασία Προιόντος")
+        with st.form("edit_form"):
+            edit_id = st.text_input("Product ID προς διόρθωση")
+            edit_company = st.text_input("Νέα Εταιρεία")
+            edit_name = st.text_input("Νέο Όνομα Προιόντος")
+            edit_qty = st.number_input("Νέα Ποσότητα", min_value=0, step=1)
+            edit_year = st.number_input("Νέο Έτος", min_value=2000, max_value=2100, value=2026, step=1)
+            
+            edit_btn = st.form_submit_button("Ενημέρωση")
+            
+            if edit_btn:
+                if edit_id:
+                    try:
+                        sheet = get_products_sheet()
+                        # Βρίσκουμε ποια γραμμή αντιστοιχεί στο product_id
+                        cell = sheet.find(edit_id)
+                        if cell:
+                            row_num = cell.row
+                            # Ενημερώνουμε τα αντίστοιχα κελιά της γραμμής (στήλες B, C, D, E)
+                            sheet.update_cell(row_num, 2, edit_company)
+                            sheet.update_cell(row_num, 3, edit_name)
+                            sheet.update_cell(row_num, 4, edit_qty)
+                            sheet.update_cell(row_num, 5, edit_year)
+                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
+                            st.rerun()
+                        else:
+                            st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
+                    except Exception as e:
+                        st.error(f"Σφάλμα ενημέρωσης: {e}")
+                else:
+                    st.warning("Συμπληρώστε το Product ID που θέλετε να διορθώσετε.")
 # ==========================================
 # 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
