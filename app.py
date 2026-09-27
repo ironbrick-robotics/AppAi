@@ -97,7 +97,14 @@ if st.session_state.user_role == "admin":
         client = gspread.authorize(creds)
         return client.open("DB_ROBOTICS").worksheet("db_products")
 
-    # Ενότητα: Εξοπλισμός (Χωρισμένη σε καρτέλες για Εισαγωγή και Επεξεργασία)
+    # --- ΚΟΥΜΠΙ ΑΝΑΝΕΩΣΗΣ ΔΕΔΟΜΕΝΩΝ (Για να μην ξεφεύγουμε με τα αιτήματα στη Google) ---
+    col_ref1, col_ref2 = st.columns([3, 1])
+    with col_ref2:
+        if st.button("🔄 Ανανέωση Δεδομένων"):
+            st.cache_resource.clear()
+            st.rerun()
+
+    # Ενότητα: Εξοπλισμός
     st.header("📦 Εξοπλισμός")
     
     # 1. Προβολή τρεχόντων προϊόντων
@@ -112,11 +119,17 @@ if st.session_state.user_role == "admin":
     except Exception as e:
         st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
-    # 2. Φόρμες Εισαγωγής και Επεξεργασίας σε 2 στήλες
-    col_insert, col_edit = st.columns(2)
+    st.markdown("---")
 
-    with col_insert:
-        st.subheader("➕ Εισαγωγή Προιόντος")
+    # 2. Επιλογή ενέργειας (Ανοίγει διαφορετική φόρμα/«σελίδα» επιλογής)
+    action = st.radio(
+        "Επιλέξτε ενέργεια διαχείρισης:", 
+        ["Επιλέξτε...", "➕ Εισαγωγή Νέου Προιόντος", "✏️ Επεξεργασία Υπάρχοντος Προιόντος"],
+        horizontal=True
+    )
+
+    if action == "➕ Εισαγωγή Νέου Προιόντος":
+        st.subheader("➕ Φόρμα Εισαγωγής Προιόντος")
         with st.form("insert_form"):
             p_id = st.text_input("Product ID")
             p_company = st.text_input("Εταιρεία (Company)")
@@ -124,46 +137,45 @@ if st.session_state.user_role == "admin":
             p_qty = st.number_input("Ποσότητα (Quantity)", min_value=0, step=1)
             p_year = st.number_input("Έτος (Year)", min_value=2000, max_value=2100, value=2026, step=1)
             
-            insert_btn = st.form_submit_button("Εισαγωγή")
+            insert_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_btn:
                 if p_id:
                     try:
                         sheet = get_products_sheet()
-                        # Προσθήκη νέας γραμμής με τη σειρά των πεδίων
                         sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
                         st.success("Το προϊόν προστέθηκε επιτυχώς!")
+                        st.cache_resource.clear()
                         st.rerun()
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
                     st.warning("Το Product ID είναι υποχρεωτικό.")
 
-    with col_edit:
-        st.subheader("✏️ Επεξεργασία Προιόντος")
+    elif action == "✏️ Επεξεργασία Υπάρχοντος Προιόντος":
+        st.subheader("✏️ Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
         with st.form("edit_form"):
-            edit_id = st.text_input("Product ID προς διόρθωση")
+            edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
             edit_company = st.text_input("Νέα Εταιρεία")
             edit_name = st.text_input("Νέο Όνομα Προιόντος")
             edit_qty = st.number_input("Νέα Ποσότητα", min_value=0, step=1)
             edit_year = st.number_input("Νέο Έτος", min_value=2000, max_value=2100, value=2026, step=1)
             
-            edit_btn = st.form_submit_button("Ενημέρωση")
+            edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
             
             if edit_btn:
                 if edit_id:
                     try:
                         sheet = get_products_sheet()
-                        # Βρίσκουμε ποια γραμμή αντιστοιχεί στο product_id
                         cell = sheet.find(edit_id)
                         if cell:
                             row_num = cell.row
-                            # Ενημερώνουμε τα αντίστοιχα κελιά της γραμμής (στήλες B, C, D, E)
                             sheet.update_cell(row_num, 2, edit_company)
                             sheet.update_cell(row_num, 3, edit_name)
                             sheet.update_cell(row_num, 4, edit_qty)
                             sheet.update_cell(row_num, 5, edit_year)
                             st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
+                            st.cache_resource.clear()
                             st.rerun()
                         else:
                             st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
@@ -171,6 +183,8 @@ if st.session_state.user_role == "admin":
                         st.error(f"Σφάλμα ενημέρωσης: {e}")
                 else:
                     st.warning("Συμπληρώστε το Product ID που θέλετε να διορθώσετε.")
+
+
 # ==========================================
 # 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
