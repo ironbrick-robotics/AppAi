@@ -12,26 +12,32 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
-# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΔΙΟΡΘΩΜΕΝΗ)
+# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΜΕΣΩ CONNECTIONS.GSHEETS)
 # ==========================================
 @st.cache_resource
 def get_gspread_client():
+    creds_dict = {
+        "type": st.secrets["connections"]["gsheets"]["type"],
+        "project_id": st.secrets["connections"]["gsheets"]["project_id"],
+        "private_key_id": st.secrets["connections"]["gsheets"]["private_key_id"],
+        "private_key": st.secrets["connections"]["gsheets"]["private_key"],
+        "client_email": st.secrets["connections"]["gsheets"]["client_email"],
+        "client_id": st.secrets["connections"]["gsheets"]["client_id"],
+        "auth_uri": st.secrets["connections"]["gsheets"]["auth_uri"],
+        "token_uri": st.secrets["connections"]["gsheets"]["token_uri"],
+        "auth_provider_x509_cert_url": st.secrets["connections"]["gsheets"]["auth_provider_x509_cert_url"],
+        "client_x509_cert_url": st.secrets["connections"]["gsheets"]["client_x509_cert_url"]
+    }
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    if "gcp_service_account" in st.secrets:
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        # Διόρθωση για τις αλλαγές γραμμής στο private key
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    else:
-        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     return gspread.authorize(creds)
 
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
-    
+
+
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
 # ==========================================
@@ -133,10 +139,10 @@ if st.session_state.user_role == "admin":
         st.subheader("➕ Φόρμα Εισαγωγής Προιόντος")
         with st.form("insert_form"):
             p_id = st.text_input("Product ID")
-            p_company = st.text_input("Εταιρεία (Company)")
-            p_name = st.text_input("Όνομα Προιόντος (Name)")
-            p_qty = st.number_input("Ποσότητα (Quantity)", min_value=0, step=1)
-            p_year = st.number_input("Έτος (Year)", min_value=2000, max_value=2100, value=2026, step=1)
+            p_company = st.text_input("Εταιρεία (product_company)")
+            p_name = st.text_input("Όνομα Προιόντος (product_name)")
+            p_qty = st.number_input("Ποσότητα (product_quantity)", min_value=0, step=1)
+            p_year = st.number_input("Έτος (product_year)", min_value=2000, max_value=2100, value=2026, step=1)
             
             insert_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
@@ -157,10 +163,10 @@ if st.session_state.user_role == "admin":
         st.subheader("✏️ Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
         with st.form("edit_form"):
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
-            edit_company = st.text_input("Νέα Εταιρεία")
-            edit_name = st.text_input("Νέο Όνομα Προιόντος")
-            edit_qty = st.number_input("Νέα Ποσότητα", min_value=0, step=1)
-            edit_year = st.number_input("Νέο Έτος", min_value=2000, max_value=2100, value=2026, step=1)
+            edit_company = st.text_input("Νέα Εταιρεία (product_company)")
+            edit_name = st.text_input("Νέο Όνομα Προιόντος (product_name)")
+            edit_qty = st.number_input("Νέα Ποσότητα (product_quantity)", min_value=0, step=1)
+            edit_year = st.number_input("Νέο Έτος (product_year)", min_value=2000, max_value=2100, value=2026, step=1)
             
             edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
             
