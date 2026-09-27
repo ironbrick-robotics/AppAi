@@ -33,12 +33,16 @@ def check_google_sheet_user(username, password):
         for row in records:
             u = str(row.get("username", row.get("Username", ""))).strip()
             p = str(row.get("password", row.get("Password", ""))).strip()
+            r = str(row.get("role", row.get("Role", "admin"))).strip()
             if u == username and p == password:
-                return row.get("role", "admin")
+                return r
     except Exception as e:
-        # Fallback αν δεν έχει γίνει ακόμη πλήρης ρύθμιση του sheet
-        if username == "admin" and password == "admin2026!admin":
-            return "admin"
+        pass
+        
+    # Fallback αν δεν διαβάστηκε το Sheet αλλά δίνεις τον σωστό κωδικό διαχειριστή
+    if username == "admin" and password == "admin2026!":
+        return "admin"
+        
     return None
 
 # Αν δεν έχει κάνει login, δείχνει τη φόρμα σύνδεσης
@@ -56,11 +60,11 @@ if not st.session_state.logged_in:
                 st.session_state.user_role = "tutor"
                 st.rerun()
             else:
-                # 2. Έλεγχος από το Google Sheet για admin / άλλους χρήστες
+                # 2. Έλεγχος από το Google Sheet ή το fallback
                 role = check_google_sheet_user(input_user, input_pass)
                 if role:
                     st.session_state.logged_in = True
-                    st.session_state.user_role = "admin"
+                    st.session_state.user_role = role
                     st.rerun()
                 else:
                     st.error("Λάθος Username ή Password!")
