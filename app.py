@@ -8,7 +8,16 @@ import requests
 import re
 import os
 import streamlit.components.v1 as components
+import json
 
+@st.cache_resource
+def get_products_sheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # Διαβάζει το JSON απευθείας από τα secrets ως string και το κάνει dictionary
+    creds_dict = json.loads(st.secrets["GCP_JSON"])
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    client = gspread.authorize(creds)
+    return client.open("DB_ROBOTICS").worksheet("db_products")
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
