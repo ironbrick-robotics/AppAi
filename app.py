@@ -1,20 +1,18 @@
 import streamlit as st
 import pandas as pd
 import gspread
-import time
-import unicodedata
 from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-import io
-import os
-import re
+from openai import OpenAI
+import datetime
 import requests
+import re
+import os
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
-# 1. ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΑΚΡΙΒΩΣ ΟΠΩΣ ΣΤΗΝ 1Η ΕΦΑΡΜΟΓΗ)
+# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
 # ==========================================
 @st.cache_resource
 def get_gspread_client():
@@ -41,11 +39,14 @@ def get_products_sheet():
 
 
 # ==========================================
-# 2. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
+# 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) & PAGE STATE
 # ==========================================
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.user_role = None
+
+if "admin_subpage" not in st.session_state:
+    st.session_state.admin_subpage = "menu"
 
 def check_google_sheet_user(username, password):
     """Ελέγχει τα στοιχεία σύνδεσης από το Google Sheet DB_ROBOTICS -> tab DB_user"""
@@ -81,12 +82,14 @@ if not st.session_state.logged_in:
             if input_user == "argykoyr" and input_pass == "ai_agent":
                 st.session_state.logged_in = True
                 st.session_state.user_role = "tutor"
+                st.session_state.admin_subpage = "menu"
                 st.rerun()
             else:
                 role = check_google_sheet_user(input_user, input_pass)
                 if role:
                     st.session_state.logged_in = True
                     st.session_state.user_role = role
+                    st.session_state.admin_subpage = "menu"
                     st.rerun()
                 else:
                     st.error("Λάθος Username ή Password!")
@@ -96,49 +99,68 @@ if not st.session_state.logged_in:
 if st.sidebar.button("Αποσύνδεση"):
     st.session_state.logged_in = False
     st.session_state.user_role = None
+    st.session_state.admin_subpage = "menu"
     st.rerun()
 
 
 # ==========================================
-# 3. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS -> db_products)
+# 2. ΠΕΡΙΒΑΛΛΟΝ ΔΙΑΧΕΙΡΙΣΤΗ (ADMIN / DB_ROBOTICS)
 # ==========================================
 if st.session_state.user_role == "admin":
-    st.title("🛠️ Admin Portal: Διαχείριση Εξοπλισμού")
+    
+    # Κεντρικός τίτλος ενότητας
+    st.title("🛠️ Admin Portal: Εξοπλισμός Ρομποτικής")
     st.write("Διαχείριση προϊόντων στην καρτέλα **db_products** του Google Sheet **DB_ROBOTICS**.")
 
-    # --- ΚΟΥΜΠΙ ΑΝΑΝΕΩΣΗΣ ΔΕΔΟΜΕΝΩΝ ---
-    col_ref1, col_ref2 = st.columns([3, 1])
-    with col_ref2:
-        if st.button("🔄 Ανανέωση Δεδομένων"):
-            st.cache_resource.clear()
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
+    # ------------------------------------------
+    if st.session_state.admin_subpage == "menu":
+        # Κουμπί ανανέωσης δεδομένων
+        col_ref1, col_ref2 = st.columns([3, 1])
+        with col_ref2:
+            if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
+                st.cache_resource.clear()
+                st.rerun()
+
+        st.header("📦 Εξοπλισμός")
+        
+        # Προβολή τρεχόντων προϊόντων
+        try:
+            sheet = get_products_sheet()
+            records = sheet.get_all_records()
+            if records:
+                df_products = pd.DataFrame(records)
+                st.dataframe(df_products, use_container_width=True)
+            else:
+                st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
+
+        st.markdown("---")
+        st.subheader("Επιλογή Ενέργειας")
+
+        # Κουμπιά πλοήγησης σε ξεχωριστές σελίδες
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("➕ Εισαγωγή Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "insert"
+                st.rerun()
+        with col_btn2:
+            if st.button("✏️ Επεξεργασία Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "edit"
+                st.rerun()
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Β: ΕΙΣΑΓΩΓΗ ΝΕΟΥ ΠΡΟΪΟΝΤΟΣ
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "insert":
+        if st.button("⬅️ Επιστροφή στον Εξοπλισμό"):
+            st.session_state.admin_subpage = "menu"
             st.rerun()
 
-    # Ενότητα: Εξοπλισμός
-    st.header("📦 Εξοπλισμός")
-    
-    # 1. Προβολή τρεχόντων προϊόντων
-    try:
-        sheet = get_products_sheet()
-        records = sheet.get_all_records()
-        if records:
-            df_products = pd.DataFrame(records)
-            st.dataframe(df_products, use_container_width=True)
-        else:
-            st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
-    except Exception as e:
-        st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
-
-    st.markdown("---")
-
-    # 2. Επιλογή ενέργειας (Εισαγωγή ή Επεξεργασία)
-    action = st.radio(
-        "Επιλέξτε ενέργεια διαχείρισης:", 
-        ["Επιλέξτε...", "➕ Εισαγωγή Νέου Προιόντος", "✏️ Επεξεργασία Υπάρχοντος Προιόντος"],
-        horizontal=True
-    )
-
-    if action == "➕ Εισαγωγή Νέου Προιόντος":
-        st.subheader("➕ Φόρμα Εισαγωγής Προιόντος")
+        st.subheader("➕ Εξοπλισμός Ρομποτικής: Φόρμα Εισαγωγής Νέου Προιόντος")
+        
         with st.form("insert_form"):
             p_id = st.text_input("Product ID")
             p_company = st.text_input("Εταιρεία (Company)")
@@ -155,14 +177,23 @@ if st.session_state.user_role == "admin":
                         sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
                         st.success("Το προϊόν προστέθηκε επιτυχώς!")
                         st.cache_resource.clear()
+                        st.session_state.admin_subpage = "menu"
                         st.rerun()
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
                     st.warning("Το Product ID είναι υποχρεωτικό.")
 
-    elif action == "✏️ Επεξεργασία Υπάρχοντος Προιόντος":
-        st.subheader("✏️ Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Γ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "edit":
+        if st.button("⬅️ Επιστροφή στον Εξοπλισμό"):
+            st.session_state.admin_subpage = "menu"
+            st.rerun()
+
+        st.subheader("✏️ Εξοπλισμός Ρομποτικής: Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
+        
         with st.form("edit_form"):
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
             edit_company = st.text_input("Νέα Εταιρεία")
@@ -185,6 +216,7 @@ if st.session_state.user_role == "admin":
                             sheet.update_cell(row_num, 5, edit_year)
                             st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
                             st.cache_resource.clear()
+                            st.session_state.admin_subpage = "menu"
                             st.rerun()
                         else:
                             st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
@@ -195,7 +227,7 @@ if st.session_state.user_role == "admin":
 
 
 # ==========================================
-# 4. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
+# 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
 elif st.session_state.user_role == "tutor":
     st.title("AppIDE: LLM-Based Robotics Tutor")
@@ -304,4 +336,3 @@ elif st.session_state.user_role == "tutor":
                             }]})
                     except Exception as e:
                         st.error(f"Error: {e}")
-                        
