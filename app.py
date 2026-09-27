@@ -11,18 +11,23 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
-# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΜΕΣΩ STREAMLIT SECRETS)
+# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (ΧΩΡΙΣ ΣΦΑΛΜΑΤΑ)
 # ==========================================
 @st.cache_resource
 def get_gspread_client():
-    # Το gspread διαβάζει αυτόματα το [gcp_service_account] από τα st.secrets
-    return gspread.service_account(params=st.secrets["gcp_service_account"])
+    if "gcp_service_account" in st.secrets:
+        # Μετατροπή των secrets σε κανονικό dictionary για το gspread
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        return gspread.service_account_from_dict(creds_dict)
+    else:
+        # Fallback τοπικό αρχείο αν τρέχει τοπικά
+        return gspread.service_account(filename="credentials.json")
 
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
-
+    
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ)
 # ==========================================
