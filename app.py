@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
 from openai import OpenAI
 import datetime
 import requests
@@ -10,25 +10,33 @@ import os
 import streamlit.components.v1 as components
 
 st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+
 # ==========================================
-# ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ ΤΟ GOOGLE SHEET: DB_ROBOTICS
+# ΣΥΓΧΡΟΝΗ ΚΑΙ ΑΛΑΝΘΑΣΤΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS
 # ==========================================
 @st.cache_resource
 def get_gspread_client():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    if "gcp_service_account" in st.secrets:
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+    try:
+        if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
+            creds_dict = dict(st.secrets["connections"]["gsheets"])
+        elif "gcp_service_account" in st.secrets:
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            if "private_key" in creds_dict:
+                creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        else:
+            return None
+            
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = service_account.Credentials.from_service_account_info(creds_dict, scopes=scope)
         return gspread.authorize(creds)
-    return None
+    except Exception as e:
+        st.error(f"Σφάλμα αυθεντικοποίησης Google: {e}")
+        return None
 
 @st.cache_resource
 def get_products_sheet():
     client = get_gspread_client()
     if client:
-        # Ανοίγει αυστηρά το Google Sheet με όνομα DB_ROBOTICS και καρτέλα db_products
         return client.open("DB_ROBOTICS").worksheet("db_products")
     return None
     
