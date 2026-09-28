@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE", layout="wide")
+st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -154,9 +154,6 @@ if st.session_state.user_role == "admin":
             if st.button("➕ Εισαγωγή Κατηγορίας", use_container_width=True):
                 st.session_state.admin_subpage = "insert_company"
                 st.rerun()
-            if st.button("📋 Λίστα Κατηγοριών", use_container_width=True):
-                st.session_state.admin_subpage = "list_company"
-                st.rerun()
         with col_c2:
             if st.button("✏️ Επεξεργασία Κατηγορίας", use_container_width=True):
                 st.session_state.admin_subpage = "edit_company"
@@ -170,9 +167,6 @@ if st.session_state.user_role == "admin":
             if st.button("➕ Εισαγωγή Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "insert"
                 st.rerun()
-            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
-                st.session_state.admin_subpage = "list"
-                st.rerun()
             if st.button("🤝 Δανεισμός Εξοπλισμού", use_container_width=True):
                 st.session_state.admin_subpage = "loans"
                 st.rerun()
@@ -183,8 +177,24 @@ if st.session_state.user_role == "admin":
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
                 st.session_state.admin_subpage = "broken"
                 st.rerun()
+
+        st.markdown("---")
+        st.subheader("📊 Αναφορές")
+
+        col_r1, col_r2 = st.columns(2)
+        with col_r1:
+            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
+                st.session_state.admin_subpage = "list"
+                st.rerun()
             if st.button("📋 Λίστα ενεργών δανεισμών", use_container_width=True):
                 st.session_state.admin_subpage = "active_loans_list"
+                st.rerun()
+        with col_r2:
+            if st.button("📋 Λίστα Κατηγοριών", use_container_width=True):
+                st.session_state.admin_subpage = "list_company"
+                st.rerun()
+            if st.button("📋 Λίστα κατεστραμμένων", use_container_width=True):
+                st.session_state.admin_subpage = "broken_list"
                 st.rerun()
 
     # ------------------------------------------
@@ -603,6 +613,52 @@ if st.session_state.user_role == "admin":
                 st.info("Δεν βρέθηκαν ενεργοί δανεισμοί αυτή τη στιγμή.")
         except Exception as e:
             st.error(f"Σφάλμα φόρτωσης ενεργών δανεισμών: {e}")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Κ: ΛΙΣΤΑ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "broken_list":
+        st.subheader("📋 Λίστα Κατεστραμμένων Προϊόντων")
+        
+        try:
+            b_sheet = get_broken_sheet()
+            b_records = b_sheet.get_all_records()
+            
+            broken_list_data = []
+            for r in b_records:
+                b_id = str(r.get("broken_id", r.get("ID", ""))).strip()
+                b_comp = str(r.get("broken_company", r.get("Company", ""))).strip()
+                b_sub = str(r.get("broken_subcategory", r.get("Subcategory", ""))).strip()
+                b_name = str(r.get("broken_name", r.get("Name", ""))).strip()
+                
+                b_qty = 0
+                try:
+                    b_qty = int(r.get("broken_quantity", r.get("Quantity", 0)))
+                except:
+                    pass
+                
+                op_val = 0
+                try:
+                    op_val = int(r.get("operation", r.get("Operation", 0)))
+                except:
+                    pass
+                
+                broken_list_data.append({
+                    "ΚΩΔΙΚΟΣ": b_id,
+                    "ΚΑΤΗΓΟΡΙΑ": b_comp,
+                    "ΥΠΟΚΑΤΗΓΟΡΙΑ": b_sub,
+                    "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": b_name,
+                    "ΚΑΤΕΣΤΡΑΜΜΕΝΑ ΤΕΜΑΧΙΑ": b_qty,
+                    "ΥΠΟΛΟΙΠΟ ΛΕΙΤΟΥΡΓΙΚΩΝ": op_val
+                })
+
+            if broken_list_data:
+                df_broken = pd.DataFrame(broken_list_data)
+                st.dataframe(df_broken, use_container_width=True, hide_index=True)
+            else:
+                st.info("Η καρτέλα db_broken είναι προς το παρόν άδεια.")
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης κατεστραμμένων: {e}")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ (DB_Company)
