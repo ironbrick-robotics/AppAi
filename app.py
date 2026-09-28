@@ -147,7 +147,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
-        st.subheader("🏢 Κατηγορία Προϊόντος")
+        st.subheader("🏢 Εταιρεία Προϊόντος")
 
         col_c1, col_c2 = st.columns(2)
         with col_c1:
@@ -185,7 +185,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα, Δανεισμένα & Λειτουργικά)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με τη νέα σειρά στηλών)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -212,12 +212,11 @@ if st.session_state.user_role == "admin":
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
 
-            # Υπολογισμός ενεργών δανεισμένων ανά προϊόν (μόνο όσοι είναι "Ενεργός Δανεισμός")
+            # Υπολογισμός ενεργών δανεισμένων ανά προϊόν
             loan_map = {}
             for lr in l_records:
                 status = str(lr.get("status", lr.get("Status", ""))).strip()
                 if status == "Ενεργός Δανεισμός":
-                    # Αναζήτηση βάσει ονόματος προϊόντος ή ID
                     p_name_loan = str(lr.get("product_name", lr.get("Product Name", ""))).strip()
                     l_qty = 0
                     try:
@@ -247,15 +246,16 @@ if st.session_state.user_role == "admin":
                     # Λειτουργικά = Συνολικά - Χαλασμένα - Δανεισμένα
                     functional_qty = max(0, p_qty - broken_qty - borrowed_qty)
                     
+                    # Σειρά στηλών: ΣΥΝΟΛΙΚΑ, ΛΕΙΤΟΥΡΓΙΚΑ, ΧΑΛΑΣΜΕΝΑ, ΔΑΝΕΙΣΜΕΝΑ
                     table_data.append({
                         "ΚΩΔΙΚΟΣ": p_id,
                         "ΚΑΤΗΓΟΡΙΑ": p_comp,
                         "ΥΠΟΚΑΤΗΓΟΡΙΑ": p_sub,
                         "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
                         "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
+                        "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty,
                         "ΧΑΛΑΣΜΕΝΑ": broken_qty,
-                        "ΔΑΝΕΙΣΜΕΝΑ": borrowed_qty,
-                        "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty
+                        "ΔΑΝΕΙΣΜΕΝΑ": borrowed_qty
                     })
 
                 df_products = pd.DataFrame(table_data)
@@ -514,7 +514,6 @@ if st.session_state.user_role == "admin":
                                 status_val = "Ενεργός Δανεισμός"
                                 return_date_val = "-"
 
-                                # Στήλες: loan_id, product_name, borrower_name, loan_date, quantity_borrowed, status, return_date
                                 l_sheet.append_row([
                                     next_loan_id,
                                     prod_name_val,
