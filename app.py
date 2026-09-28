@@ -145,37 +145,34 @@ if st.session_state.user_role == "admin":
     if st.session_state.admin_subpage == "menu":
         st.subheader("🏢 Εταιρεία Προϊόντος")
 
-        col_c1, col_c2, col_c3 = st.columns(3)
+        col_c1, col_c2 = st.columns(2)
         with col_c1:
             if st.button("➕ Εισαγωγή Εταιρείας", use_container_width=True):
                 st.session_state.admin_subpage = "insert_company"
+                st.rerun()
+            if st.button("📋 Λίστα Εταιρειών", use_container_width=True):
+                st.session_state.admin_subpage = "list_company"
                 st.rerun()
         with col_c2:
             if st.button("✏️ Επεξεργασία Εταιρείας", use_container_width=True):
                 st.session_state.admin_subpage = "edit_company"
                 st.rerun()
-        with col_c3:
-            if st.button("📋 Λίστα Εταιρειών", use_container_width=True):
-                st.session_state.admin_subpage = "list_company"
-                st.rerun()
 
         st.markdown("---")
         st.subheader("📦 Εισαγωγή - Επεξεργασία Προϊόντος")
 
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        col_m1, col_m2 = st.columns(2)
         with col_m1:
             if st.button("➕ Εισαγωγή Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "insert"
+                st.rerun()
+            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
+                st.session_state.admin_subpage = "list"
                 st.rerun()
         with col_m2:
             if st.button("✏️ Επεξεργασία Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "edit"
                 st.rerun()
-        with col_m3:
-            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
-                st.session_state.admin_subpage = "list"
-                st.rerun()
-        with col_m4:
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
                 st.session_state.admin_subpage = "broken"
                 st.rerun()
@@ -457,7 +454,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
-        st.subheader("📋 Λίστα Εταιρειών")
+        st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Εταιρειών")
         
         try:
             c_sheet = get_company_sheet()
