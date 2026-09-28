@@ -255,7 +255,7 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (υποστηρίζει ποσότητες για sensor1 και sensor2)
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -288,15 +288,12 @@ if st.session_state.user_role == "admin":
                         wheels_qty = 0
                     wheels_name = str(rr.get("wheels", "")).strip()
 
-                    chassis = str(rr.get("chassis", "")).strip()
-
                     if board: robot_usage_map[board] = robot_usage_map.get(board, 0) + 1
                     if s1: robot_usage_map[s1] = robot_usage_map.get(s1, 0) + s1_qty
                     if s2: robot_usage_map[s2] = robot_usage_map.get(s2, 0) + s2_qty
                     if batt: robot_usage_map[batt] = robot_usage_map.get(batt, 0) + 1
                     if motors_name and motors_qty > 0: robot_usage_map[motors_name] = robot_usage_map.get(motors_name, 0) + motors_qty
                     if wheels_name and wheels_qty > 0: robot_usage_map[wheels_name] = robot_usage_map.get(wheels_name, 0) + wheels_qty
-                    if chassis: robot_usage_map[chassis] = robot_usage_map.get(chassis, 0) + 1
 
             if p_records:
                 table_data = []
@@ -684,7 +681,7 @@ if st.session_state.user_role == "admin":
                 with col_w2:
                     wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1)
 
-                chassis = st.selectbox("Σασί", options=[""] + product_names)
+                chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)")
                 
                 build_submit = st.form_submit_button("Οριστική Κατασκευή Ρομπότ")
 
@@ -695,7 +692,7 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            # Αποθήκευση στο db_robots (συμπεριλαμβανομένου του sensor2_qty)
+                            # Αποθήκευση στο db_robots (15 στήλες με ακριβή σειρά)
                             r_sheet.append_row([
                                 next_robot_id,
                                 operator_name.strip(),
@@ -710,7 +707,7 @@ if st.session_state.user_role == "admin":
                                 motors_qty,
                                 wheels,
                                 wheels_qty,
-                                chassis,
+                                chassis.strip(),
                                 "Ενεργό"
                             ])
                             st.success(f"Το ρομπότ '{robot_name}' κατασκευάστηκε και καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
@@ -813,7 +810,7 @@ if st.session_state.user_role == "admin":
                         edit_wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, value=curr_wqty, step=1)
 
                     curr_chassis = str(r_data.get("chassis", ""))
-                    edit_chassis = st.selectbox("Σασί", options=[""] + product_names, index=(product_names.index(curr_chassis) + 1) if curr_chassis in product_names else 0)
+                    edit_chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", value=curr_chassis)
 
                     st.markdown("---")
                     st.write("**Τι να γίνουν τα εξαρτήματα που τυχόν αφαιρέθηκαν από το ρομπότ;**")
@@ -826,7 +823,7 @@ if st.session_state.user_role == "admin":
                             r_sheet = get_robots_sheet()
                             row_idx = chosen_robot["row_index"]
 
-                            # Ενημέρωση Google Sheet db_robots (στήλες 2 έως 14)
+                            # Ενημέρωση Google Sheet db_robots (στήλες 2 έως 15)
                             r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                             r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
                             r_sheet.update_cell(row_idx, 4, edit_board)
@@ -839,7 +836,7 @@ if st.session_state.user_role == "admin":
                             r_sheet.update_cell(row_idx, 11, edit_motors_qty)
                             r_sheet.update_cell(row_idx, 12, edit_wheels)
                             r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
-                            r_sheet.update_cell(row_idx, 14, edit_chassis)
+                            r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
 
                             if return_action == "Καταγραφή ως Κατεστραμμένα (db_broken)":
                                 diff_motors = curr_mqty - edit_motors_qty
