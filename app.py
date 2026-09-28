@@ -100,12 +100,33 @@ if not st.session_state.logged_in:
                     st.error("Λάθος Username ή Password!")
     st.stop()
 
-# Πλαϊνό μενού αποσύνδεσης
-if st.sidebar.button("Αποσύνδεση"):
-    st.session_state.logged_in = False
-    st.session_state.user_role = None
-    st.session_state.admin_subpage = "menu"
-    st.rerun()
+
+# ==========================================
+# SIDEBAR: ΠΑΝΤΑ ΔΙΑΘΕΣΙΜΑ ΚΟΥΜΠΙΑ ΨΗΛΑ
+# ==========================================
+with st.sidebar:
+    st.markdown("### ⚙️ Γενικός Έλεγχος")
+    
+    # 1. Κουμπί Ανανέωσης Δεδομένων (Καθαρισμός cache)
+    if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
+        st.cache_resource.clear()
+        st.success("Η μνήμη ανανεώθηκε!")
+        st.rerun()
+
+    # 2. Κουμπί Επιστροφή στο Μενού (αν δεν είμαστε ήδη στο μενού)
+    if st.session_state.user_role == "admin" and st.session_state.admin_subpage != "menu":
+        if st.button("🏠 Επιστροφή στο Μενού", use_container_width=True):
+            st.session_state.admin_subpage = "menu"
+            st.rerun()
+
+    st.markdown("---")
+    
+    # 3. Κουμπί Αποσύνδεσης
+    if st.button("🚪 Αποσύνδεση", use_container_width=True):
+        st.session_state.logged_in = False
+        st.session_state.user_role = None
+        st.session_state.admin_subpage = "menu"
+        st.rerun()
 
 
 # ==========================================
@@ -160,16 +181,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
-        col_ref1, col_ref2 = st.columns([3, 1])
-        with col_ref2:
-            if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
-                st.cache_resource.clear()
-                st.rerun()
-
         st.subheader("📋 Εισαγωγή - Επεξεργασία Προιόντος: Λίστα Εξοπλισμού")
         
         try:
@@ -177,7 +188,11 @@ if st.session_state.user_role == "admin":
             records = sheet.get_all_records()
             if records:
                 df_products = pd.DataFrame(records)
-                st.dataframe(df_products, use_container_width=True)
+                # Αφαίρεση τυχόν περιττής πρώτης στήλης index αν υπάρχει
+                if df_products.shape[1] >= 5:
+                    df_products = df_products.iloc[:, :5]
+                    df_products.columns = ["Product ID", "Company", "Name", "Quantity", "Year"]
+                st.dataframe(df_products, use_container_width=True, hide_index=True)
             else:
                 st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
         except Exception as e:
@@ -187,10 +202,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Γ: ΕΙΣΑΓΩΓΗ ΝΕΟΥ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
         st.subheader("➕ Εισαγωγή - Επεξεργασία Προιόντος: Φόρμα Εισαγωγής Νέου Προιόντος")
         
         # Υπολογισμός αυτόματου Product ID
@@ -241,9 +252,8 @@ if st.session_state.user_role == "admin":
                 if p_name.strip() and selected_company:
                     try:
                         p_sheet = get_products_sheet()
-                        # Αποθήκευση με τα πεδία: product_id, product_company, product_name, quantity, year (ή ανάλογα με τις στήλες σου)
                         p_sheet.append_row([next_p_id, selected_company, p_name.strip(), p_qty, p_year])
-                        st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στη λίστα εξοπλισμού για να το δείτε.")
+                        st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
@@ -253,10 +263,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
         st.subheader("✏️ Εισαγωγή - Επεξεργασία Προιόντος: Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
         
         with st.form("edit_form"):
@@ -279,7 +285,7 @@ if st.session_state.user_role == "admin":
                             sheet.update_cell(row_num, 3, edit_name.strip())
                             sheet.update_cell(row_num, 4, edit_qty)
                             sheet.update_cell(row_num, 5, edit_year)
-                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
+                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
                         else:
                             st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
                     except Exception as e:
@@ -291,16 +297,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Ε: ΛΙΣΤΑ ΕΤΑΙΡΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
-        col_ref1, col_ref2 = st.columns([3, 1])
-        with col_ref2:
-            if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
-                st.cache_resource.clear()
-                st.rerun()
-
         st.subheader("📋 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Λίστα Εταιριών")
         
         try:
@@ -321,10 +317,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ ΣΤ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert_company":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
         st.subheader("➕ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Εισαγωγής Νέας Εταιρίας")
         
         try:
@@ -355,7 +347,7 @@ if st.session_state.user_role == "admin":
                     try:
                         c_sheet = get_company_sheet()
                         c_sheet.append_row([next_id, company_name.strip()])
-                        st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στη λίστα εταιριών για να την δείτε.")
+                        st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να την δείτε.")
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης: {e}")
                 else:
@@ -365,10 +357,6 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Ζ: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit_company":
-        if st.button("⬅️ Επιστροφή στο Μενού"):
-            st.session_state.admin_subpage = "menu"
-            st.rerun()
-
         st.subheader("✏️ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Επεξεργασίας / Διόρθωσης Εταιρίας")
         
         company_options = {}
@@ -401,7 +389,7 @@ if st.session_state.user_role == "admin":
                             if cell:
                                 row_num = cell.row
                                 c_sheet.update_cell(row_num, 2, new_c_name.strip())
-                                st.success(f"Η εταιρία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
+                                st.success(f"Η εταιρία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
                             else:
                                 st.error(f"Δεν βρέθηκε η εταιρία στο Google Sheet.")
                         except Exception as e:
