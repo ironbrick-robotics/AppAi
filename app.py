@@ -143,7 +143,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
-        st.subheader("🏢 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ")
+        st.subheader("🏢 Εταιρεία Προϊόντος")
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
@@ -245,7 +245,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Γ: ΕΙΣΑΓΩΓΗ ΝΕΟΥ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert":
-        st.subheader("➕ Εισαγωγή - Επεξεργασία Προϊόντος: Φόρμα Εισαγωγής Νέου Προϊόντος")
+        st.subheader("➕ Φόρμα Εισαγωγής Νέου Προϊόντος")
         
         try:
             p_sheet = get_products_sheet()
@@ -297,7 +297,7 @@ if st.session_state.user_role == "admin":
                         p_sheet = get_products_sheet()
                         # Σειρά: product_id, product_company, product_subcategory, product_name, product_quantity
                         p_sheet.append_row([next_p_id, selected_company, selected_subcategory, p_name.strip(), p_qty])
-                        st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
+                        st.success("Το προϊόν αποθηκεύτηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
@@ -307,7 +307,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit":
-        st.subheader("✏️ Εισαγωγή - Επεξεργασία Προϊόντος: Φόρμα Επεξεργασίας / Διόρθωσης Προϊόντος")
+        st.subheader("✏️ Φόρμα Επεξεργασίας Προϊόντος")
         
         company_options = []
         product_records = []
@@ -384,7 +384,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "broken":
-        st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων (db_broken)")
+        st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων")
         
         company_options = []
         product_records = []
@@ -428,7 +428,7 @@ if st.session_state.user_role == "admin":
                 chosen_b_prod = product_display_options[selected_b_prod_label]
 
                 with st.form("broken_form"):
-                    broken_qty = st.number_input("Κατεστραμμένα Τεμάχια (broken_quantity)", min_value=0, max_value=chosen_b_prod["quantity"], step=1)
+                    broken_qty = st.number_input("Κατεστραμμένα Τεμάχια", min_value=0, max_value=chosen_b_prod["quantity"], step=1)
                     submit_broken = st.form_submit_button("Καταχώριση Κατεστραμμένων")
                     
                     if submit_broken:
@@ -477,7 +477,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Ζ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΕΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert_company":
-        st.subheader("➕ ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Φόρμα Εισαγωγής Νέας Εταιρείας")
+        st.subheader("➕ Φόρμα Εισαγωγής Νέας Εταιρείας")
         
         try:
             c_sheet = get_company_sheet()
@@ -517,7 +517,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Η: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΕΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit_company":
-        st.subheader("✏️ ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Φόρμα Επεξεργασίας / Διόρθωσης Εταιρείας")
+        st.subheader("✏️ Φόρμα Επεξεργασίας Εταιρείας")
         
         company_options = {}
         try:
