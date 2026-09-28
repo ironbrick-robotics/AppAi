@@ -121,25 +121,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
-        st.header("📦 Εξοπλισμός Ρομποτικής")
-        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες:")
-
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            if st.button("➕ Εισαγωγή Προιόντος", use_container_width=True):
-                st.session_state.admin_subpage = "insert"
-                st.rerun()
-        with col_m2:
-            if st.button("✏️ Επεξεργασία Προιόντος", use_container_width=True):
-                st.session_state.admin_subpage = "edit"
-                st.rerun()
-        with col_m3:
-            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
-                st.session_state.admin_subpage = "list"
-                st.rerun()
-
-        st.markdown("---")
-        st.header("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
+        st.subheader("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
         st.write("Διαχείριση εταιριών (tab DB_Company):")
 
         col_c1, col_c2, col_c3 = st.columns(3)
@@ -156,6 +138,24 @@ if st.session_state.user_role == "admin":
                 st.session_state.admin_subpage = "list_company"
                 st.rerun()
 
+        st.markdown("---")
+        st.subheader("📦 Εισαγωγή - Επεξεργασία Προιόντος")
+        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες:")
+
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1:
+            if st.button("➕ Εισαγωγή Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "insert"
+                st.rerun()
+        with col_m2:
+            if st.button("✏️ Επεξεργασία Προιόντος", use_container_width=True):
+                st.session_state.admin_subpage = "edit"
+                st.rerun()
+        with col_m3:
+            if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
+                st.session_state.admin_subpage = "list"
+                st.rerun()
+
     # ------------------------------------------
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
     # ------------------------------------------
@@ -170,7 +170,7 @@ if st.session_state.user_role == "admin":
                 st.cache_resource.clear()
                 st.rerun()
 
-        st.subheader("📋 Εξοπλισμός Ρομποτικής: Λίστα Εξοπλισμού")
+        st.subheader("📋 Εισαγωγή - Επεξεργασία Προιόντος: Λίστα Εξοπλισμού")
         
         try:
             sheet = get_products_sheet()
@@ -191,7 +191,7 @@ if st.session_state.user_role == "admin":
             st.session_state.admin_subpage = "menu"
             st.rerun()
 
-        st.subheader("➕ Εξοπλισμός Ρομποτικής: Φόρμα Εισαγωγής Νέου Προιόντος")
+        st.subheader("➕ Εισαγωγή - Επεξεργασία Προιόντος: Φόρμα Εισαγωγής Νέου Προιόντος")
         
         with st.form("insert_form"):
             p_id = st.text_input("Product ID")
@@ -224,7 +224,7 @@ if st.session_state.user_role == "admin":
             st.session_state.admin_subpage = "menu"
             st.rerun()
 
-        st.subheader("✏️ Εξοπλισμός Ρομποτικής: Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
+        st.subheader("✏️ Εισαγωγή - Επεξεργασία Προιόντος: Φόρμα Επεξεργασίας / Διόρθωσης Προιόντος")
         
         with st.form("edit_form"):
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
@@ -278,7 +278,6 @@ if st.session_state.user_role == "admin":
             records = c_sheet.get_all_records()
             if records:
                 df_company = pd.DataFrame(records)
-                # Κρατάμε μόνο τις 2 πρώτες στήλες (ID και Επωνυμία) και μετονομάζουμε τους τίτλους
                 if df_company.shape[1] >= 2:
                     df_company = df_company.iloc[:, :2]
                     df_company.columns = ["ID", "ΕΠΩΝΥΜΙΑ"]
@@ -298,7 +297,6 @@ if st.session_state.user_role == "admin":
 
         st.subheader("➕ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Εισαγωγής Νέας Εταιρίας")
         
-        # Υπολογισμός αυτόματου αυξόντος company_id
         try:
             c_sheet = get_company_sheet()
             records = c_sheet.get_all_records()
@@ -344,7 +342,6 @@ if st.session_state.user_role == "admin":
 
         st.subheader("✏️ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Επεξεργασίας / Διόρθωσης Εταιρίας")
         
-        # Φόρτωση υπαρχουσών εταιριών για το dropdown
         company_options = {}
         try:
             c_sheet = get_company_sheet()
