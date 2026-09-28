@@ -218,7 +218,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με χρωματισμό εξαντλημένων)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Αχρησιμοποίητα)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -320,6 +320,7 @@ if st.session_state.user_role == "admin":
                     borrowed_qty = loan_map.get(p_name, 0)
                     used_qty = robot_usage_map.get(p_name, 0)
                     
+                    # ΛΕΙΤΟΥΡΓΙΚΑ (Αχρησιμοποίητα - ελεύθερα) = Συνολικά - Χαλασμένα - Δανεισμένα - Χρησιμοποιούνται
                     functional_qty = max(0, p_qty - broken_qty - borrowed_qty - used_qty)
                     
                     table_data.append({
@@ -328,7 +329,7 @@ if st.session_state.user_role == "admin":
                         "ΥΠΟΚΑΤΗΓΟΡΙΑ": p_sub,
                         "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
                         "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
-                        "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty,
+                        "ΑΧΡΗΣΙΜΟΠΟΙΗΤΑ": functional_qty,
                         "ΧΡΗΣΙΜΟΠΟΙΟΥΝΤΑΙ": used_qty,
                         "ΧΑΛΑΣΜΕΝΑ": broken_qty,
                         "ΔΑΝΕΙΣΜΕΝΑ": borrowed_qty
