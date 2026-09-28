@@ -135,15 +135,13 @@ with st.sidebar:
 if st.session_state.user_role == "admin":
     
     # Κεντρικός τίτλος ενότητας
-    st.title("🛠️ Admin Portal: Διαχείριση Συστήματος")
-    st.write("Διαχείριση δεδομένων στο Google Sheet **DB_ROBOTICS**.")
+    st.title("Διαχείριση εξοπλισμού Ρομποτικής")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
         st.subheader("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
-        st.write("Διαχείριση εταιριών (tab DB_Company):")
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
