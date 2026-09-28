@@ -114,14 +114,15 @@ if st.sidebar.button("Αποσύνδεση"):
 if st.session_state.user_role == "admin":
     
     # Κεντρικός τίτλος ενότητας
-    st.title("Διαχείριση Εξοπλισμού Ρομποτικής")
+    st.title("🛠️ Admin Portal: Διαχείριση Συστήματος")
+    st.write("Διαχείριση δεδομένων στο Google Sheet **DB_ROBOTICS**.")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
         st.subheader("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
-        st.write("Διαχείριση εταιριών:")
+        st.write("Διαχείριση εταιριών (tab DB_Company):")
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
@@ -139,6 +140,7 @@ if st.session_state.user_role == "admin":
 
         st.markdown("---")
         st.subheader("📦 Εισαγωγή - Επεξεργασία Προιόντος")
+        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες:")
 
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
@@ -191,28 +193,61 @@ if st.session_state.user_role == "admin":
 
         st.subheader("➕ Εισαγωγή - Επεξεργασία Προιόντος: Φόρμα Εισαγωγής Νέου Προιόντος")
         
+        # Υπολογισμός αυτόματου Product ID
+        try:
+            p_sheet = get_products_sheet()
+            p_records = p_sheet.get_all_records()
+            if p_records:
+                p_ids = []
+                for r in p_records:
+                    val = r.get("product_id", r.get("Product ID", r.get("id", len(p_ids) + 1)))
+                    try:
+                        p_ids.append(int(val))
+                    except:
+                        pass
+                next_p_id = max(p_ids) + 1 if p_ids else len(p_records) + 1
+            else:
+                next_p_id = 1
+        except:
+            next_p_id = 1
+
+        st.info(f"Αυτόματο Product ID που θα αποθηκευτεί: **{next_p_id}**")
+
+        # Φόρτωση εταιριών για το dropdown
+        company_list = []
+        try:
+            c_sheet = get_company_sheet()
+            c_records = c_sheet.get_all_records()
+            for r in c_records:
+                c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
+                if c_name and c_name not in company_list:
+                    company_list.append(c_name)
+        except Exception as e:
+            pass
+
         with st.form("insert_form"):
-            p_id = st.text_input("Product ID")
-            p_company = st.text_input("Εταιρεία (Company)")
-            p_name = st.text_input("Όνομα Προιόντος (Name)")
+            if company_list:
+                selected_company = st.selectbox("Εταιρεία (product_company)", options=company_list)
+            else:
+                selected_company = st.text_input("Εταιρεία (product_company) - (Δεν βρέθηκαν εταιρίες στο DB_Company)")
+            
+            p_name = st.text_input("Όνομα Προιόντος (product_name)")
             p_qty = st.number_input("Ποσότητα (Quantity)", min_value=0, step=1)
             p_year = st.number_input("Έτος (Year)", min_value=2000, max_value=2100, value=2026, step=1)
             
             insert_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_btn:
-                if p_id:
+                if p_name.strip() and selected_company:
                     try:
-                        sheet = get_products_sheet()
-                        sheet.append_row([p_id, p_company, p_name, p_qty, p_year])
-                        st.success("Το προϊόν προστέθηκε επιτυχώς!")
-                        st.cache_resource.clear()
-                        st.session_state.admin_subpage = "list"
-                        st.rerun()
+                        p_sheet = get_products_sheet()
+                        # Αποθήκευση με τα πεδία: product_id, product_company, product_name, quantity, year (ή ανάλογα με τις στήλες σου)
+                        p_sheet.append_row([next_p_id, selected_company, p_name.strip(), p_qty, p_year])
+                        st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στη λίστα εξοπλισμού για να το δείτε.")
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
-                    st.warning("Το Product ID είναι υποχρεωτικό.")
+                    st.warning("Το όνομα προϊόντος και η εταιρεία είναι υποχρεωτικά.")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
@@ -226,28 +261,25 @@ if st.session_state.user_role == "admin":
         
         with st.form("edit_form"):
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
-            edit_company = st.text_input("Νέα Εταιρεία")
-            edit_name = st.text_input("Νέο Όνομα Προιόντος")
+            edit_company = st.text_input("Νέα Εταιρεία (product_company)")
+            edit_name = st.text_input("Νέο Όνομα Προιόντος (product_name)")
             edit_qty = st.number_input("Νέα Ποσότητα", min_value=0, step=1)
             edit_year = st.number_input("Νέο Έτος", min_value=2000, max_value=2100, value=2026, step=1)
             
             edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
             
             if edit_btn:
-                if edit_id:
+                if edit_id.strip():
                     try:
                         sheet = get_products_sheet()
-                        cell = sheet.find(edit_id)
+                        cell = sheet.find(edit_id.strip())
                         if cell:
                             row_num = cell.row
-                            sheet.update_cell(row_num, 2, edit_company)
-                            sheet.update_cell(row_num, 3, edit_name)
+                            sheet.update_cell(row_num, 2, edit_company.strip())
+                            sheet.update_cell(row_num, 3, edit_name.strip())
                             sheet.update_cell(row_num, 4, edit_qty)
                             sheet.update_cell(row_num, 5, edit_year)
-                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς!")
-                            st.cache_resource.clear()
-                            st.session_state.admin_subpage = "list"
-                            st.rerun()
+                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
                         else:
                             st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
                     except Exception as e:
@@ -323,8 +355,7 @@ if st.session_state.user_role == "admin":
                     try:
                         c_sheet = get_company_sheet()
                         c_sheet.append_row([next_id, company_name.strip()])
-                        st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» (ή πηγαίνετε στη λίστα) για να την δείτε.")
-                        st.cache_resource.clear()
+                        st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στη λίστα εταιριών για να την δείτε.")
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης: {e}")
                 else:
@@ -371,7 +402,6 @@ if st.session_state.user_role == "admin":
                                 row_num = cell.row
                                 c_sheet.update_cell(row_num, 2, new_c_name.strip())
                                 st.success(f"Η εταιρία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
-                                st.cache_resource.clear()
                             else:
                                 st.error(f"Δεν βρέθηκε η εταιρία στο Google Sheet.")
                         except Exception as e:
