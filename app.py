@@ -457,7 +457,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
-        st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Εταιρειών")
+        st.subheader("📋 Λίστα Εταιρειών")
         
         try:
             c_sheet = get_company_sheet()
