@@ -159,7 +159,6 @@ if st.session_state.user_role == "admin":
 
         st.markdown("---")
         st.subheader("📦 Εισαγωγή - Επεξεργασία Προιόντος")
-        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες:")
 
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
