@@ -666,7 +666,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με ποσότητες στα extra parts)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -736,7 +736,6 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            # Δημιουργία string με τις ακριβείς ποσότητες (π.χ. "Αντιστάσεις:8, Πινάκια:10")
                             extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
 
                             r_sheet.append_row([
@@ -801,7 +800,6 @@ if st.session_state.user_role == "admin":
                 product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
                 product_names = sorted(list(set(product_names)))
 
-                # Ανάγνωση προηγούμενων extra parts και ποσοτήτων τους
                 existing_extras = {}
                 curr_extra_str = str(r_data.get("extra_parts", "")).strip()
                 if curr_extra_str:
