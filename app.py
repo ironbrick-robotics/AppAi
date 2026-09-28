@@ -666,7 +666,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (ΔΥΝΑΜΙΚΗ ΦΟΡΜΑ ΧΩΡΙΣ ΚΛΕΙΔΩΜΑ st.form)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -684,86 +684,88 @@ if st.session_state.user_role == "admin":
             product_names = [str(r.get("product_name", r.get("Name", ""))).strip() for r in product_records if str(r.get("product_name", r.get("Name", ""))).strip()]
             product_names = sorted(list(set(product_names)))
 
-            with st.form("robot_build_form"):
-                operator_name = st.text_input("Όνομα Χειριστή")
-                robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)")
+            operator_name = st.text_input("Όνομα Χειριστή", key="b_op")
+            robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)", key="b_rname")
 
-                board = st.selectbox("Πλακέτα", options=[""] + product_names)
-                
-                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-                with col_s1:
-                    sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names)
-                with col_s2:
-                    sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, step=1, value=1)
-                with col_s3:
-                    sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names)
-                with col_s4:
-                    sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, step=1)
+            board = st.selectbox("Πλακέτα", options=[""] + product_names, key="b_board")
+            
+            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+            with col_s1:
+                sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, key="b_s1")
+            with col_s2:
+                sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, step=1, value=1, key="b_s1_q")
+            with col_s3:
+                sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, key="b_s2")
+            with col_s4:
+                sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, step=1, key="b_s2_q")
 
-                battery = st.selectbox("Μπαταρία", options=[""] + product_names)
-                
-                col_m1, col_m2 = st.columns(2)
-                with col_m1:
-                    motors = st.selectbox("Κινητήρες", options=[""] + product_names)
-                with col_m2:
-                    motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, step=1)
+            battery = st.selectbox("Μπαταρία", options=[""] + product_names, key="b_batt")
+            
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                motors = st.selectbox("Κινητήρες", options=[""] + product_names, key="b_mot")
+            with col_m2:
+                motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, step=1, key="b_mot_q")
 
-                col_w1, col_w2 = st.columns(2)
-                with col_w1:
-                    wheels = st.selectbox("Ρόδες", options=[""] + product_names)
-                with col_w2:
-                    wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1)
+            col_w1, col_w2 = st.columns(2)
+            with col_w1:
+                wheels = st.selectbox("Ρόδες", options=[""] + product_names, key="b_wh")
+            with col_w2:
+                wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1, key="b_wh_q")
 
-                chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)")
+            chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", key="b_ch")
 
-                st.markdown("---")
-                st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
-                
-                selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, key="build_extras_multi")
-                
-                extra_qtys = {}
-                if selected_extras:
-                    st.write("Ορίστε τεμάχια για καθένα από τα extra υλικά:")
-                    for ex in selected_extras:
-                        extra_qtys[ex] = st.number_input(f"Τεμάχια για: {ex}", min_value=1, step=1, value=1, key=f"build_ex_qty_{ex}")
-                
-                build_submit = st.form_submit_button("Οριστική Κατασκευή Ρομπότ")
+            st.markdown("---")
+            st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
+            
+            selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη (εμφανίζεται αμέσως πεδίο ποσότητας για το καθένα):", options=product_names, key="build_extras_multi")
+            
+            extra_qtys = {}
+            if selected_extras:
+                st.markdown("**Ορίστε τεμάχια για καθένα από τα επιλεγμένα extra υλικά:**")
+                cols_ex = st.columns(2)
+                for idx, ex in enumerate(selected_extras):
+                    with cols_ex[idx % 2]:
+                        extra_qtys[ex] = st.number_input(f"Τεμάχια για «{ex}»", min_value=1, step=1, value=1, key=f"build_ex_qty_{ex}")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            build_submit = st.button("Οριστική Κατασκευή Ρομπότ", type="primary", use_container_width=True)
 
-                if build_submit:
-                    if operator_name.strip() and robot_name.strip():
-                        try:
-                            r_sheet = get_robots_sheet()
-                            r_records = r_sheet.get_all_records()
-                            next_robot_id = len(r_records) + 1 if r_records else 1
+            if build_submit:
+                if operator_name.strip() and robot_name.strip():
+                    try:
+                        r_sheet = get_robots_sheet()
+                        r_records = r_sheet.get_all_records()
+                        next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
+                        extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
 
-                            r_sheet.append_row([
-                                next_robot_id,
-                                operator_name.strip(),
-                                robot_name.strip(),
-                                board,
-                                sensor1,
-                                sensor1_qty,
-                                sensor2,
-                                sensor2_qty,
-                                battery,
-                                motors,
-                                motors_qty,
-                                wheels,
-                                wheels_qty,
-                                chassis.strip(),
-                                extra_parts_str,
-                                "Ενεργό"
-                            ])
-                            st.success(f"Το ρομπότ '{robot_name}' κατασκευάστηκε και καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
-                        except Exception as e:
-                            st.error(f"Σφάλμα αποθήκευσης ρομπότ: {e}")
-                    else:
-                        st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
+                        r_sheet.append_row([
+                            next_robot_id,
+                            operator_name.strip(),
+                            robot_name.strip(),
+                            board,
+                            sensor1,
+                            sensor1_qty,
+                            sensor2,
+                            sensor2_qty,
+                            battery,
+                            motors,
+                            motors_qty,
+                            wheels,
+                            wheels_qty,
+                            chassis.strip(),
+                            extra_parts_str,
+                            "Ενεργό"
+                        ])
+                        st.success(f"Το ρομπότ '{robot_name}' κατασκευάστηκε και καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                    except Exception as e:
+                        st.error(f"Σφάλμα αποθήκευσης ρομπότ: {e}")
+                else:
+                    st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (ΔΥΝΑΜΙΚΗ ΦΟΡΜΑ ΧΩΡΙΣ st.form)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -796,6 +798,7 @@ if st.session_state.user_role == "admin":
                 selected_robot_label = st.selectbox("Επιλέξτε Ρομπότ προς Τροποποίηση", options=list(robot_options.keys()))
                 chosen_robot = robot_options[selected_robot_label]
                 r_data = chosen_robot["data"]
+                r_idx = chosen_robot["row_index"]
 
                 product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
                 product_names = sorted(list(set(product_names)))
@@ -811,104 +814,106 @@ if st.session_state.user_role == "admin":
                             except:
                                 existing_extras[pn.strip()] = 1
 
-                with st.form("robot_edit_form"):
-                    edit_operator = st.text_input("Νέο Όνομα Χειριστή", value=str(r_data.get("operator_name", r_data.get("Operator", ""))))
-                    edit_robot_name = st.text_input("Νέο Όνομα Ρομπότ", value=str(r_data.get("robot_name", r_data.get("Robot Name", ""))))
+                edit_operator = st.text_input("Νέο Όνομα Χειριστή", value=str(r_data.get("operator_name", r_data.get("Operator", ""))), key=f"ed_op_{r_idx}")
+                edit_robot_name = st.text_input("Νέο Όνομα Ρομπότ", value=str(r_data.get("robot_name", r_data.get("Robot Name", ""))), key=f"ed_rn_{r_idx}")
 
-                    curr_board = str(r_data.get("board", ""))
-                    edit_board = st.selectbox("Πλακέτα", options=[""] + product_names, index=(product_names.index(curr_board) + 1) if curr_board in product_names else 0)
+                curr_board = str(r_data.get("board", ""))
+                edit_board = st.selectbox("Πλακέτα", options=[""] + product_names, index=(product_names.index(curr_board) + 1) if curr_board in product_names else 0, key=f"ed_bd_{r_idx}")
 
-                    curr_s1 = str(r_data.get("sensor1", ""))
+                curr_s1 = str(r_data.get("sensor1", ""))
+                try:
+                    curr_s1_qty = int(r_data.get("sensor1_qty", 1))
+                except:
+                    curr_s1_qty = 1
+
+                curr_s2 = str(r_data.get("sensor2", ""))
+                try:
+                    curr_s2_qty = int(r_data.get("sensor2_qty", 1))
+                except:
+                    curr_s2_qty = 1
+
+                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+                with col_s1:
+                    edit_sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, index=(product_names.index(curr_s1) + 1) if curr_s1 in product_names else 0, key=f"ed_s1_{r_idx}")
+                with col_s2:
+                    edit_sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, value=curr_s1_qty, step=1, key=f"ed_s1q_{r_idx}")
+                with col_s3:
+                    edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0, key=f"ed_s2_{r_idx}")
+                with col_s4:
+                    edit_sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, value=curr_s2_qty, step=1, key=f"ed_s2q_{r_idx}")
+
+                curr_batt = str(r_data.get("battery", ""))
+                edit_battery = st.selectbox("Μπαταρία", options=[""] + product_names, index=(product_names.index(curr_batt) + 1) if curr_batt in product_names else 0, key=f"ed_bt_{r_idx}")
+
+                curr_motors = str(r_data.get("motors", ""))
+                try:
+                    curr_mqty = int(r_data.get("motors_qty", 0))
+                except:
+                    curr_mqty = 0
+
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    edit_motors = st.selectbox("Κινητήρες", options=[""] + product_names, index=(product_names.index(curr_motors) + 1) if curr_motors in product_names else 0, key=f"ed_mot_{r_idx}")
+                with col_m2:
+                    edit_motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, value=curr_mqty, step=1, key=f"ed_motq_{r_idx}")
+
+                curr_wheels = str(r_data.get("wheels", ""))
+                try:
+                    curr_wqty = int(r_data.get("wheels_qty", 0))
+                except:
+                    curr_wqty = 0
+
+                col_w1, col_w2 = st.columns(2)
+                with col_w1:
+                    edit_wheels = st.selectbox("Ρόδες", options=[""] + product_names, index=(product_names.index(curr_wheels) + 1) if curr_wheels in product_names else 0, key=f"ed_wh_{r_idx}")
+                with col_w2:
+                    edit_wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, value=curr_wqty, step=1, key=f"ed_whq_{r_idx}")
+
+                curr_chassis = str(r_data.get("chassis", ""))
+                edit_chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", value=curr_chassis, key=f"ed_ch_{r_idx}")
+
+                st.markdown("---")
+                st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
+                default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
+                edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη (εμφανίζεται αμέσως πεδίο ποσότητας για το καθένα):", options=product_names, default=default_selected_extras, key=f"edit_extras_multi_{r_idx}")
+                
+                edit_extra_qtys = {}
+                if edit_selected_extras:
+                    st.markdown("**Ορίστε τεμάχια για καθένα από τα επιλεγμένα extra υλικά:**")
+                    cols_ed_ex = st.columns(2)
+                    for idx, ex in enumerate(edit_selected_extras):
+                        default_val = existing_extras.get(ex, 1)
+                        with cols_ed_ex[idx % 2]:
+                            edit_extra_qtys[ex] = st.number_input(f"Τεμάχια για «{ex}»", min_value=1, step=1, value=default_val, key=f"edit_ex_qty_{r_idx}_{ex}")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                edit_submit = st.button("Οριστική Ενημέρωση Ρομπότ", type="primary", use_container_width=True)
+
+                if edit_submit:
                     try:
-                        curr_s1_qty = int(r_data.get("sensor1_qty", 1))
-                    except:
-                        curr_s1_qty = 1
+                        r_sheet = get_robots_sheet()
+                        row_idx = chosen_robot["row_index"]
 
-                    curr_s2 = str(r_data.get("sensor2", ""))
-                    try:
-                        curr_s2_qty = int(r_data.get("sensor2_qty", 1))
-                    except:
-                        curr_s2_qty = 1
+                        edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_selected_extras])
 
-                    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-                    with col_s1:
-                        edit_sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, index=(product_names.index(curr_s1) + 1) if curr_s1 in product_names else 0)
-                    with col_s2:
-                        edit_sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, value=curr_s1_qty, step=1)
-                    with col_s3:
-                        edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0)
-                    with col_s4:
-                        edit_sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, value=curr_s2_qty, step=1)
+                        r_sheet.update_cell(row_idx, 2, edit_operator.strip())
+                        r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
+                        r_sheet.update_cell(row_idx, 4, edit_board)
+                        r_sheet.update_cell(row_idx, 5, edit_sensor1)
+                        r_sheet.update_cell(row_idx, 6, edit_sensor1_qty)
+                        r_sheet.update_cell(row_idx, 7, edit_sensor2)
+                        r_sheet.update_cell(row_idx, 8, edit_sensor2_qty)
+                        r_sheet.update_cell(row_idx, 9, edit_battery)
+                        r_sheet.update_cell(row_idx, 10, edit_motors)
+                        r_sheet.update_cell(row_idx, 11, edit_motors_qty)
+                        r_sheet.update_cell(row_idx, 12, edit_wheels)
+                        r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
+                        r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
+                        r_sheet.update_cell(row_idx, 15, edit_extra_parts_str)
 
-                    curr_batt = str(r_data.get("battery", ""))
-                    edit_battery = st.selectbox("Μπαταρία", options=[""] + product_names, index=(product_names.index(curr_batt) + 1) if curr_batt in product_names else 0)
-
-                    curr_motors = str(r_data.get("motors", ""))
-                    try:
-                        curr_mqty = int(r_data.get("motors_qty", 0))
-                    except:
-                        curr_mqty = 0
-
-                    col_m1, col_m2 = st.columns(2)
-                    with col_m1:
-                        edit_motors = st.selectbox("Κινητήρες", options=[""] + product_names, index=(product_names.index(curr_motors) + 1) if curr_motors in product_names else 0)
-                    with col_m2:
-                        edit_motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, value=curr_mqty, step=1)
-
-                    curr_wheels = str(r_data.get("wheels", ""))
-                    try:
-                        curr_wqty = int(r_data.get("wheels_qty", 0))
-                    except:
-                        curr_wqty = 0
-
-                    col_w1, col_w2 = st.columns(2)
-                    with col_w1:
-                        edit_wheels = st.selectbox("Ρόδες", options=[""] + product_names, index=(product_names.index(curr_wheels) + 1) if curr_wheels in product_names else 0)
-                    with col_w2:
-                        edit_wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, value=curr_wqty, step=1)
-
-                    curr_chassis = str(r_data.get("chassis", ""))
-                    edit_chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", value=curr_chassis)
-
-                    st.markdown("---")
-                    st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
-                    default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
-                    edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, default=default_selected_extras, key="edit_extras_multi")
-                    
-                    edit_extra_qtys = {}
-                    if edit_selected_extras:
-                        st.write("Ορίστε τεμάχια για καθένα από τα extra υλικά:")
-                        for ex in edit_selected_extras:
-                            default_val = existing_extras.get(ex, 1)
-                            edit_extra_qtys[ex] = st.number_input(f"Τεμάχια για: {ex}", min_value=1, step=1, value=default_val, key=f"edit_ex_qty_{ex}")
-
-                    edit_submit = st.form_submit_button("Οριστική Ενημέρωση Ρομπότ")
-
-                    if edit_submit:
-                        try:
-                            r_sheet = get_robots_sheet()
-                            row_idx = chosen_robot["row_index"]
-
-                            edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_selected_extras])
-
-                            r_sheet.update_cell(row_idx, 2, edit_operator.strip())
-                            r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
-                            r_sheet.update_cell(row_idx, 4, edit_board)
-                            r_sheet.update_cell(row_idx, 5, edit_sensor1)
-                            r_sheet.update_cell(row_idx, 6, edit_sensor1_qty)
-                            r_sheet.update_cell(row_idx, 7, edit_sensor2)
-                            r_sheet.update_cell(row_idx, 8, edit_sensor2_qty)
-                            r_sheet.update_cell(row_idx, 9, edit_battery)
-                            r_sheet.update_cell(row_idx, 10, edit_motors)
-                            r_sheet.update_cell(row_idx, 11, edit_motors_qty)
-                            r_sheet.update_cell(row_idx, 12, edit_wheels)
-                            r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
-                            r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
-                            r_sheet.update_cell(row_idx, 15, edit_extra_parts_str)
-
-                            st.success("Το ρομπότ ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
-                        except Exception as e:
-                            st.error(f"Σφάλμα ενημέρωσης ρομπότ: {e}")
+                        st.success("Το ρομπότ ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                    except Exception as e:
+                        st.error(f"Σφάλμα ενημέρωσης ρομπότ: {e}")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ
