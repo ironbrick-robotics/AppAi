@@ -40,7 +40,7 @@ def get_products_sheet():
 @st.cache_resource
 def get_company_sheet():
     client = get_gspread_client()
-    return client.open("DB_ROBOTICS").worksheet("DB_COMPANY")
+    return client.open("DB_ROBOTICS").worksheet("DB_Company")
 
 
 # ==========================================
@@ -140,7 +140,7 @@ if st.session_state.user_role == "admin":
 
         st.markdown("---")
         st.header("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
-        st.write("Διαχείριση εταιριών (tab DB_COMPANY):")
+        st.write("Διαχείριση εταιριών (tab DB_Company):")
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
@@ -258,7 +258,7 @@ if st.session_state.user_role == "admin":
                     st.warning("Συμπληρώστε το Product ID που θέλετε να διορθώσετε.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΛΙΣΤΑ ΕΤΑΙΡΙΩΝ (DB_COMPANY)
+    # ΣΕΛΙΔΑ Ε: ΛΙΣΤΑ ΕΤΑΙΡΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
         if st.button("⬅️ Επιστροφή στο Μενού"):
@@ -280,12 +280,12 @@ if st.session_state.user_role == "admin":
                 df_company = pd.DataFrame(records)
                 st.dataframe(df_company, use_container_width=True)
             else:
-                st.info("Η καρτέλα DB_COMPANY είναι προς το παρόν άδεια.")
+                st.info("Η καρτέλα DB_Company είναι προς το παρόν άδεια.")
         except Exception as e:
             st.error(f"Σφάλμα φόρτωσης δεδομένων εταιριών: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ ΣΤ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΙΑΣ (DB_COMPANY)
+    # ΣΕΛΙΔΑ ΣΤ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert_company":
         if st.button("⬅️ Επιστροφή στο Μενού"):
@@ -294,15 +294,14 @@ if st.session_state.user_role == "admin":
 
         st.subheader("➕ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Εισαγωγής Νέας Εταιρίας")
         
-        # Υπολογισμός αυτόματου αυξόντος ID
+        # Υπολογισμός αυτόματου αυξόντος company_id
         try:
             c_sheet = get_company_sheet()
             records = c_sheet.get_all_records()
             if records:
-                # Βρίσκει το μέγιστο υπάρχον ID και προσθέτει 1 (ή βασίζεται στο πλήθος)
                 ids = []
                 for r in records:
-                    val = r.get("id", r.get("ID", len(ids) + 1))
+                    val = r.get("company_id", r.get("Company ID", len(ids) + 1))
                     try:
                         ids.append(int(val))
                     except:
@@ -313,16 +312,17 @@ if st.session_state.user_role == "admin":
         except:
             next_id = 1
 
-        st.info(f"Αυτόματο ID Εταιρίας που θα αποθηκευτεί: **{next_id}**")
+        st.info(f"Αυτόματο company_id που θα αποθηκευτεί: **{next_id}**")
 
         with st.form("insert_company_form"):
-            company_name = st.text_input("Όνομα Εταιρίας")
+            company_name = st.text_input("Όνομα Εταιρίας (company_name)")
             insert_c_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_c_btn:
                 if company_name.strip():
                     try:
                         c_sheet = get_company_sheet()
+                        # Αποθήκευση με τα πεδία company_id και company_name
                         c_sheet.append_row([next_id, company_name.strip()])
                         st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» (ή πηγαίνετε στη λίστα) για να την δείτε.")
                         st.cache_resource.clear()
@@ -332,7 +332,7 @@ if st.session_state.user_role == "admin":
                     st.warning("Το όνομα της εταιρίας είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ζ: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΙΑΣ (DB_COMPANY)
+    # ΣΕΛΙΔΑ Ζ: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit_company":
         if st.button("⬅️ Επιστροφή στο Μενού"):
@@ -341,29 +341,46 @@ if st.session_state.user_role == "admin":
 
         st.subheader("✏️ ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ: Φόρμα Επεξεργασίας / Διόρθωσης Εταιρίας")
         
-        with st.form("edit_company_form"):
-            edit_c_id = st.text_input("ID Εταιρίας προς διόρθωση")
-            new_c_name = st.text_input("Νέο Όνομα Εταιρίας")
-            
-            edit_c_btn = st.form_submit_button("Οριστική Ενημέρωση")
-            
-            if edit_c_btn:
-                if edit_c_id.strip():
-                    try:
-                        c_sheet = get_company_sheet()
-                        cell = c_sheet.find(edit_c_id.strip())
-                        if cell:
-                            row_num = cell.row
-                            # Υποθέτουμε ότι η στήλη 1 είναι το ID και η στήλη 2 είναι το Όνομα
-                            c_sheet.update_cell(row_num, 2, new_c_name.strip())
-                            st.success(f"Η εταιρία με ID '{edit_c_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
-                            st.cache_resource.clear()
-                        else:
-                            st.error(f"Δεν βρέθηκε εταιρία με ID: {edit_c_id}")
-                    except Exception as e:
-                        st.error(f"Σφάλμα ενημέρωσης: {e}")
-                else:
-                    st.warning("Συμπληρώστε το ID της εταιρίας.")
+        # Φόρτωση υπαρχουσών εταιριών για το dropdown
+        company_options = {}
+        try:
+            c_sheet = get_company_sheet()
+            records = c_sheet.get_all_records()
+            for r in records:
+                c_id = str(r.get("company_id", r.get("Company ID", ""))).strip()
+                c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
+                if c_id:
+                    company_options[f"ID: {c_id} - {c_name}"] = c_id
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης εταιριών: {e}")
+
+        if not company_options:
+            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρίες στο tab DB_Company.")
+        else:
+            with st.form("edit_company_form"):
+                selected_option = st.selectbox("Επιλέξτε Εταιρία προς Τροποποίηση", options=list(company_options.keys()))
+                new_c_name = st.text_input("Νέο Όνομα Εταιρίας (company_name)")
+                
+                edit_c_btn = st.form_submit_button("Οριστική Ενημέρωση")
+                
+                if edit_c_btn:
+                    selected_id = company_options[selected_option]
+                    if selected_id and new_c_name.strip():
+                        try:
+                            c_sheet = get_company_sheet()
+                            cell = c_sheet.find(selected_id)
+                            if cell:
+                                row_num = cell.row
+                                # Ενημέρωση της στήλης 2 (company_name)
+                                c_sheet.update_cell(row_num, 2, new_c_name.strip())
+                                st.success(f"Η εταιρία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
+                                st.cache_resource.clear()
+                            else:
+                                st.error(f"Δεν βρέθηκε η εταιρία στο Google Sheet.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης: {e}")
+                    else:
+                        st.warning("Συμπληρώστε το νέο όνομα της εταιρίας.")
 
 
 # ==========================================
