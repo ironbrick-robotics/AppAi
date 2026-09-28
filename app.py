@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+st.set_page_config(page_title="AppIDE & DB", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -218,7 +218,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Αχρησιμοποίητα)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με υπολογισμό extra_parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -262,7 +262,7 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (βασικά + extra_parts)
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -295,12 +295,28 @@ if st.session_state.user_role == "admin":
                         wheels_qty = 0
                     wheels_name = str(rr.get("wheels", "")).strip()
 
+                    # Extra parts (μορφή: "Όνομα:Ποσότητα, Όνομα2:Ποσότητα2")
+                    extra_str = str(rr.get("extra_parts", "")).strip()
+
                     if board: robot_usage_map[board] = robot_usage_map.get(board, 0) + 1
                     if s1: robot_usage_map[s1] = robot_usage_map.get(s1, 0) + s1_qty
                     if s2: robot_usage_map[s2] = robot_usage_map.get(s2, 0) + s2_qty
                     if batt: robot_usage_map[batt] = robot_usage_map.get(batt, 0) + 1
                     if motors_name and motors_qty > 0: robot_usage_map[motors_name] = robot_usage_map.get(motors_name, 0) + motors_qty
                     if wheels_name and wheels_qty > 0: robot_usage_map[wheels_name] = robot_usage_map.get(wheels_name, 0) + wheels_qty
+
+                    if extra_str:
+                        parts_list = extra_str.split(",")
+                        for part in parts_list:
+                            if ":" in part:
+                                p_part_name, p_part_qty_str = part.split(":", 1)
+                                p_part_name = p_part_name.strip()
+                                try:
+                                    p_part_qty = int(p_part_qty_str.strip())
+                                except:
+                                    p_part_qty = 0
+                                if p_part_name:
+                                    robot_usage_map[p_part_name] = robot_usage_map.get(p_part_name, 0) + p_part_qty
 
             if p_records:
                 table_data = []
@@ -320,7 +336,7 @@ if st.session_state.user_role == "admin":
                     borrowed_qty = loan_map.get(p_name, 0)
                     used_qty = robot_usage_map.get(p_name, 0)
                     
-                    # ΛΕΙΤΟΥΡΓΙΚΑ (Αχρησιμοποίητα - ελεύθερα) = Συνολικά - Χαλασμένα - Δανεισμένα - Χρησιμοποιούνται
+                    # ΑΧΡΗΣΙΜΟΠΟΙΗΤΑ = Συνολικά - Χαλασμένα - Δανεισμένα - Χρησιμοποιούνται
                     functional_qty = max(0, p_qty - broken_qty - borrowed_qty - used_qty)
                     
                     table_data.append({
@@ -337,7 +353,6 @@ if st.session_state.user_role == "admin":
 
                 df_products = pd.DataFrame(table_data)
 
-                # Συνάρτηση χρωματισμού γραμμής αν τα συνολικά τεμάχια είναι 0
                 def highlight_empty(row):
                     try:
                         if int(row["ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ"]) == 0:
@@ -653,7 +668,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με extra_parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -702,6 +717,17 @@ if st.session_state.user_role == "admin":
                     wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1)
 
                 chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)")
+
+                st.markdown("---")
+                st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
+                
+                selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names)
+                
+                extra_qtys = {}
+                if selected_extras:
+                    st.write("Ορίστε ποσότητες για τα extra υλικά:")
+                    for ex in selected_extras:
+                        extra_qtys[ex] = st.number_input(f"Ποσότητα για: {ex}", min_value=1, step=1, value=1, key=f"build_ex_{ex}")
                 
                 build_submit = st.form_submit_button("Οριστική Κατασκευή Ρομπότ")
 
@@ -712,6 +738,10 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
+                            # Δημιουργία string για τα extra parts (π.χ. "Καλώδια:5, Αντιστάσεις:10")
+                            extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
+
+                            # Στήλες: robot_id, operator_name, robot_name, board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty, chassis, extra_parts, status
                             r_sheet.append_row([
                                 next_robot_id,
                                 operator_name.strip(),
@@ -727,6 +757,7 @@ if st.session_state.user_role == "admin":
                                 wheels,
                                 wheels_qty,
                                 chassis.strip(),
+                                extra_parts_str,
                                 "Ενεργό"
                             ])
                             st.success(f"Το ρομπότ '{robot_name}' κατασκευάστηκε και καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
@@ -736,7 +767,7 @@ if st.session_state.user_role == "admin":
                         st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (με extra_parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -772,6 +803,18 @@ if st.session_state.user_role == "admin":
 
                 product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
                 product_names = sorted(list(set(product_names)))
+
+                # Ανάγνωση προηγούμενων extra parts
+                existing_extras = {}
+                curr_extra_str = str(r_data.get("extra_parts", "")).strip()
+                if curr_extra_str:
+                    for part in curr_extra_str.split(","):
+                        if ":" in part:
+                            pn, pq = part.split(":", 1)
+                            try:
+                                existing_extras[pn.strip()] = int(pq.strip())
+                            except:
+                                existing_extras[pn.strip()] = 1
 
                 with st.form("robot_edit_form"):
                     edit_operator = st.text_input("Νέο Όνομα Χειριστή", value=str(r_data.get("operator_name", r_data.get("Operator", ""))))
@@ -832,12 +875,26 @@ if st.session_state.user_role == "admin":
                     curr_chassis = str(r_data.get("chassis", ""))
                     edit_chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", value=curr_chassis)
 
+                    st.markdown("---")
+                    st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
+                    default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
+                    edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, default=default_selected_extras)
+                    
+                    edit_extra_qtys = {}
+                    if edit_selected_extras:
+                        st.write("Ορίστε ποσότητες για τα extra υλικά:")
+                        for ex in edit_selected_extras:
+                            default_val = existing_extras.get(ex, 1)
+                            edit_extra_qtys[ex] = st.number_input(f"Ποσότητα για: {ex}", min_value=1, step=1, value=default_val, key=f"edit_ex_{ex}")
+
                     edit_submit = st.form_submit_button("Οριστική Ενημέρωση Ρομπότ")
 
                     if edit_submit:
                         try:
                             r_sheet = get_robots_sheet()
                             row_idx = chosen_robot["row_index"]
+
+                            edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_selected_extras])
 
                             r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                             r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
@@ -852,13 +909,14 @@ if st.session_state.user_role == "admin":
                             r_sheet.update_cell(row_idx, 12, edit_wheels)
                             r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
                             r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
+                            r_sheet.update_cell(row_idx, 15, edit_extra_parts_str)
 
                             st.success("Το ρομπότ ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                         except Exception as e:
                             st.error(f"Σφάλμα ενημέρωσης ρομπότ: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ
+    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ (Εμφάνιση και των extra_parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_list":
         st.subheader("📋 Λίστα Κατασκευασμένων Ρομπότ")
@@ -894,6 +952,7 @@ if st.session_state.user_role == "admin":
                 motors = f"{r.get('motors', '')} ({r.get('motors_qty', 0)})".strip()
                 wheels = f"{r.get('wheels', '')} ({r.get('wheels_qty', 0)})".strip()
                 chassis = str(r.get("chassis", r.get("Chassis", ""))).strip()
+                extras = str(r.get("extra_parts", "")).strip()
                 status = str(r.get("status", r.get("Status", "Ενεργό"))).strip()
 
                 robot_list_data.append({
@@ -901,11 +960,12 @@ if st.session_state.user_role == "admin":
                     "ΧΕΙΡΙΣΤΗΣ": op_name,
                     "ΟΝΟΜΑ ΡΟΜΠΟΤ": r_name,
                     "ΠΛΑΚΕΤΑ": board,
-                    "ΕΙΔΗ & ΠΟΣΟΤΗΤΕΣ ΑΙΣΘΗΤΗΡΩΝ": s_types,
+                    "ΑΙΣΘΗΤΗΡΕΣ": s_types,
                     "ΜΠΑΤΑΡΙΑ": batt,
                     "ΚΙΝΗΤΗΡΕΣ": motors,
                     "ΡΟΔΕΣ": wheels,
                     "ΣΑΣΙ": chassis,
+                    "EXTRA ΥΛΙΚΑ": extras,
                     "ΚΑΤΑΣΤΑΣΗ": status
                 })
 
