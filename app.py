@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+st.set_page_config(page_title="App - ROBOTICS", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
