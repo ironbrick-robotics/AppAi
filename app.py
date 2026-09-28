@@ -255,7 +255,7 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (υποστηρίζει sensor1_qty και sensor2_qty)
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -657,14 +657,15 @@ if st.session_state.user_role == "admin":
                 robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)")
 
                 board = st.selectbox("Πλακέτα", options=[""] + product_names)
-                sensors_count = st.number_input("Αριθμός Αισθητήρων", min_value=0, max_value=10, step=1)
                 
-                col_s1, col_s2, col_s3 = st.columns(3)
+                col_s1, col_s2, col_s3, col_s4 = st.columns(4)
                 with col_s1:
                     sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names)
                 with col_s2:
-                    sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names)
+                    sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, step=1, value=1)
                 with col_s3:
+                    sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names)
+                with col_s4:
                     sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, step=1)
 
                 battery = st.selectbox("Μπαταρία", options=[""] + product_names)
@@ -692,14 +693,14 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            # Αποθήκευση στο db_robots (15 στήλες με ακριβή σειρά)
+                            # Στήλες: robot_id, operator_name, robot_name, board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty, chassis, status
                             r_sheet.append_row([
                                 next_robot_id,
                                 operator_name.strip(),
                                 robot_name.strip(),
                                 board,
-                                sensors_count,
                                 sensor1,
+                                sensor1_qty,
                                 sensor2,
                                 sensor2_qty,
                                 battery,
@@ -761,25 +762,26 @@ if st.session_state.user_role == "admin":
                     curr_board = str(r_data.get("board", ""))
                     edit_board = st.selectbox("Πλακέτα", options=[""] + product_names, index=(product_names.index(curr_board) + 1) if curr_board in product_names else 0)
 
-                    try:
-                        curr_scount = int(r_data.get("sensors_count", 0))
-                    except:
-                        curr_scount = 0
-                    edit_sensors_count = st.number_input("Αριθμός Αισθητήρων", min_value=0, max_value=10, value=curr_scount, step=1)
-
                     curr_s1 = str(r_data.get("sensor1", ""))
+                    try:
+                        curr_s1_qty = int(r_data.get("sensor1_qty", 1))
+                    except:
+                        curr_s1_qty = 1
+
                     curr_s2 = str(r_data.get("sensor2", ""))
                     try:
                         curr_s2_qty = int(r_data.get("sensor2_qty", 1))
                     except:
                         curr_s2_qty = 1
 
-                    col_s1, col_s2, col_s3 = st.columns(3)
+                    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
                     with col_s1:
                         edit_sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, index=(product_names.index(curr_s1) + 1) if curr_s1 in product_names else 0)
                     with col_s2:
-                        edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0)
+                        edit_sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, value=curr_s1_qty, step=1)
                     with col_s3:
+                        edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0)
+                    with col_s4:
                         edit_sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, value=curr_s2_qty, step=1)
 
                     curr_batt = str(r_data.get("battery", ""))
@@ -827,8 +829,8 @@ if st.session_state.user_role == "admin":
                             r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                             r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
                             r_sheet.update_cell(row_idx, 4, edit_board)
-                            r_sheet.update_cell(row_idx, 5, edit_sensors_count)
-                            r_sheet.update_cell(row_idx, 6, edit_sensor1)
+                            r_sheet.update_cell(row_idx, 5, edit_sensor1)
+                            r_sheet.update_cell(row_idx, 6, edit_sensor1_qty)
                             r_sheet.update_cell(row_idx, 7, edit_sensor2)
                             r_sheet.update_cell(row_idx, 8, edit_sensor2_qty)
                             r_sheet.update_cell(row_idx, 9, edit_battery)
@@ -872,16 +874,23 @@ if st.session_state.user_role == "admin":
                 op_name = str(r.get("operator_name", r.get("Operator", ""))).strip()
                 r_name = str(r.get("robot_name", r.get("Robot Name", ""))).strip()
                 board = str(r.get("board", r.get("Board", ""))).strip()
-                s_count = str(r.get("sensors_count", r.get("Sensors Count", ""))).strip()
                 
                 s1 = str(r.get("sensor1", "")).strip()
+                try:
+                    s1_q = int(r.get("sensor1_qty", 1))
+                except:
+                    s1_q = 1
+
                 s2 = str(r.get("sensor2", "")).strip()
                 try:
-                    s2_q = int(r.get("sensor2_qty", 1))
+                    s2_q = int(r.get("sensor2_qty", 0))
                 except:
-                    s2_q = 1
+                    s2_q = 0
 
-                s_types = f"{s1}, {s2} (x{s2_q})".strip(" , ()")
+                s_types = f"{s1} (x{s1_q})"
+                if s2:
+                    s_types += f", {s2} (x{s2_q})"
+
                 batt = str(r.get("battery", r.get("Battery", ""))).strip()
                 motors = f"{r.get('motors', '')} ({r.get('motors_qty', 0)})".strip()
                 wheels = f"{r.get('wheels', '')} ({r.get('wheels_qty', 0)})".strip()
@@ -893,8 +902,7 @@ if st.session_state.user_role == "admin":
                     "ΧΕΙΡΙΣΤΗΣ": op_name,
                     "ΟΝΟΜΑ ΡΟΜΠΟΤ": r_name,
                     "ΠΛΑΚΕΤΑ": board,
-                    "ΑΡ. ΑΙΣΘΗΤΗΡΩΝ": s_count,
-                    "ΕΙΔΗ ΑΙΣΘΗΤΗΡΩΝ": s_types,
+                    "ΕΙΔΗ & ΠΟΣΟΤΗΤΕΣ ΑΙΣΘΗΤΗΡΩΝ": s_types,
                     "ΜΠΑΤΑΡΙΑ": batt,
                     "ΚΙΝΗΤΗΡΕΣ": motors,
                     "ΡΟΔΕΣ": wheels,
