@@ -211,7 +211,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με διορθωμένα sensor1_qty)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με σωστή ανάγνωση db_robots)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -229,6 +229,7 @@ if st.session_state.user_role == "admin":
             r_sheet = get_robots_sheet()
             r_records = r_sheet.get_all_records()
             
+            # Υπολογισμός χαλασμένων
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -240,6 +241,7 @@ if st.session_state.user_role == "admin":
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
 
+            # Υπολογισμός δανεισμένων
             loan_map = {}
             for lr in l_records:
                 status = str(lr.get("status", lr.get("Status", ""))).strip()
@@ -253,7 +255,7 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (με σωστή ενσωμάτωση του sensor1_qty)
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (σειρά στηλών: board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty)
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -632,7 +634,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με ακριβή σειρά στηλών)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -691,7 +693,7 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            # Ακριβής σειρά 15 στηλών για το db_robots
+                            # Ακριβής σειρά 15 στηλών: robot_id, operator_name, robot_name, board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty, chassis, status
                             r_sheet.append_row([
                                 next_robot_id,
                                 operator_name.strip(),
@@ -716,7 +718,7 @@ if st.session_state.user_role == "admin":
                         st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (με έξυπνη διαχείριση ανά εξάρτημα)
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (db_robots)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -812,7 +814,6 @@ if st.session_state.user_role == "admin":
                     curr_chassis = str(r_data.get("chassis", ""))
                     edit_chassis = st.text_input("Σασί (Πλαίσιο - Ελεύθερο κείμενο)", value=curr_chassis)
 
-                    # Ευέλικτη διαχείληση χαλασμένων ανά εξάρτημα που μειώθηκε
                     st.markdown("---")
                     st.write("**Διαχείριση εξαρτημάτων που αφαιρέθηκαν (μειώθηκαν σε ποσότητα):**")
                     diff_motors = curr_mqty - edit_motors_qty
@@ -829,7 +830,7 @@ if st.session_state.user_role == "admin":
                             r_sheet = get_robots_sheet()
                             row_idx = chosen_robot["row_index"]
 
-                            # Ενημέρωση Google Sheet db_robots
+                            # Ενημέρωση Google Sheet db_robots (σειρά 15 στηλών)
                             r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                             r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
                             r_sheet.update_cell(row_idx, 4, edit_board)
@@ -844,7 +845,6 @@ if st.session_state.user_role == "admin":
                             r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
                             r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
 
-                            # Αν επιλέχθηκε κατεστραμμένοι για τους κινητήρες που αφαιρέθηκαν
                             if diff_motors > 0 and curr_motors and motor_action == "Καταγραφή ως Κατεστραμμένα (db_broken)":
                                 p_row = next((p for p in product_records if str(p.get("product_name", p.get("Name",""))).strip() == curr_motors), None)
                                 if p_row:
