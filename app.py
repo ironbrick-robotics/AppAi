@@ -147,14 +147,14 @@ if st.session_state.user_role == "admin":
 
         col_c1, col_c2 = st.columns(2)
         with col_c1:
-            if st.button("➕ Εισαγωγή Εταιρείας", use_container_width=True):
+            if st.button("➕ Εισαγωγή Κατηγορίας", use_container_width=True):
                 st.session_state.admin_subpage = "insert_company"
                 st.rerun()
-            if st.button("📋 Λίστα Εταιρειών", use_container_width=True):
+            if st.button("📋 Λίστα Κατηγοριών", use_container_width=True):
                 st.session_state.admin_subpage = "list_company"
                 st.rerun()
         with col_c2:
-            if st.button("✏️ Επεξεργασία Εταιρείας", use_container_width=True):
+            if st.button("✏️ Επεξεργασία Κατηγορίας", use_container_width=True):
                 st.session_state.admin_subpage = "edit_company"
                 st.rerun()
 
@@ -181,7 +181,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα & Λειτουργικά)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
-        st.subheader("📋 Λίστα Εξοπλισμού")
+        st.subheader("📋 Εισαγωγή - Επεξεργασία Προϊόντος: Λίστα Εξοπλισμού")
         
         try:
             p_sheet = get_products_sheet()
@@ -223,8 +223,8 @@ if st.session_state.user_role == "admin":
                     
                     table_data.append({
                         "ΚΩΔΙΚΟΣ": p_id,
-                        "ΕΤΑΙΡΕΙΑ": p_comp,
-                        "ΚΑΤΗΓΟΡΙΑ": p_sub,
+                        "ΚΑΤΗΓΟΡΙΑ": p_comp,
+                        "ΥΠΟΚΑΤΗΓΟΡΙΑ": p_sub,
                         "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
                         "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
                         "ΧΑΛΑΣΜΕΝΑ": broken_qty,
@@ -276,12 +276,12 @@ if st.session_state.user_role == "admin":
 
         with st.form("insert_form"):
             if company_list:
-                selected_company = st.selectbox("Εταιρεία (product_company)", options=company_list)
+                selected_company = st.selectbox("Κατηγορία (product_company)", options=company_list)
             else:
-                selected_company = st.text_input("Εταιρεία (product_company) - (Δεν βρέθηκαν εταιρείες στο DB_Company)")
+                selected_company = st.text_input("Κατηγορία (product_company) - (Δεν βρέθηκαν κατηγορίες στο DB_Company)")
             
             subcategories = ["Kit", "Part"]
-            selected_subcategory = st.selectbox("Κατηγορία (product_subcategory)", options=subcategories)
+            selected_subcategory = st.selectbox("Υποκατηγορία (product_subcategory)", options=subcategories)
             
             p_name = st.text_input("Όνομα Προϊόντος (product_name)")
             p_qty = st.number_input("Τεμάχια (product_quantity)", min_value=0, step=1)
@@ -298,7 +298,7 @@ if st.session_state.user_role == "admin":
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
                 else:
-                    st.warning("Το όνομα προϊόντος και η εταιρεία είναι υποχρεωτικά.")
+                    st.warning("Το όνομα προϊόντος και η κατηγορία είναι υποχρεωτικά.")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
@@ -322,9 +322,9 @@ if st.session_state.user_role == "admin":
             st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
         if not company_options or not product_records:
-            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες ή προϊόντα.")
+            st.warning("Δεν βρέθηκαν καταχωρημένες κατηγορίες ή προϊόντα.")
         else:
-            selected_edit_company = st.selectbox("Επιλέξτε Εταιρεία", options=company_options)
+            selected_edit_company = st.selectbox("Επιλέξτε Κατηγορία", options=company_options)
             
             filtered_products = []
             for idx, r in enumerate(product_records):
@@ -337,7 +337,7 @@ if st.session_state.user_role == "admin":
             product_display_options = {f"ID: {p['id']} - {p['name']}": p for p in filtered_products}
 
             if not product_display_options:
-                st.info(f"Δεν υπάρχουν προϊόντα για την εταιρεία '{selected_edit_company}'.")
+                st.info(f"Δεν υπάρχουν προϊόντα για την κατηγορία '{selected_edit_company}'.")
             else:
                 selected_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()))
                 chosen_product = product_display_options[selected_prod_label]
@@ -355,7 +355,7 @@ if st.session_state.user_role == "admin":
                     curr_qty = 0
 
                 with st.form("edit_form"):
-                    edit_subcategory = st.selectbox("Νέα Κατηγορία (product_subcategory)", options=["Kit", "Part"], index=["Kit", "Part"].index(curr_subcat))
+                    edit_subcategory = st.selectbox("Νέα Υποκατηγορία (product_subcategory)", options=["Kit", "Part"], index=["Kit", "Part"].index(curr_subcat))
                     edit_name = st.text_input("Νέο Όνομα Προϊόντος (product_name)", value=curr_name)
                     edit_qty = st.number_input("Νέα Τεμάχια (product_quantity)", min_value=0, value=curr_qty, step=1)
                     
@@ -399,9 +399,9 @@ if st.session_state.user_role == "admin":
             st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
         if not company_options or not product_records:
-            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες ή προϊόντα.")
+            st.warning("Δεν βρέθηκαν καταχωρημένες κατηγορίες ή προϊόντα.")
         else:
-            selected_b_company = st.selectbox("Επιλέξτε Εταιρεία", options=company_options, key="b_comp")
+            selected_b_company = st.selectbox("Επιλέξτε Κατηγορία", options=company_options, key="b_comp")
             
             filtered_products = []
             for r in product_records:
@@ -419,7 +419,7 @@ if st.session_state.user_role == "admin":
             product_display_options = {f"ID: {p['id']} - {p['name']} (Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
 
             if not product_display_options:
-                st.info(f"Δεν υπάρχουν προϊόντα για την εταιρεία '{selected_b_company}'.")
+                st.info(f"Δεν υπάρχουν προϊόντα για την κατηγορία '{selected_b_company}'.")
             else:
                 selected_b_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()), key="b_prod")
                 chosen_b_prod = product_display_options[selected_b_prod_label]
@@ -451,10 +451,10 @@ if st.session_state.user_role == "admin":
                             st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
+    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
-        st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Εταιρειών")
+        st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Κατηγοριών")
         
         try:
             c_sheet = get_company_sheet()
@@ -468,13 +468,13 @@ if st.session_state.user_role == "admin":
             else:
                 st.info("Η καρτέλα DB_Company είναι προς το παρόν άδεια.")
         except Exception as e:
-            st.error(f"Σφάλμα φόρτωσης δεδομένων εταιρειών: {e}")
+            st.error(f"Σφάλμα φόρτωσης δεδομένων κατηγοριών: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ζ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΕΙΑΣ (DB_Company)
+    # ΣΕΛΙΔΑ Ζ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΚΑΤΗΓΟΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert_company":
-        st.subheader("➕ Φόρμα Εισαγωγής Νέας Εταιρείας")
+        st.subheader("➕ Φόρμα Εισαγωγής Νέας Κατηγορίας")
         
         try:
             c_sheet = get_company_sheet()
@@ -496,7 +496,7 @@ if st.session_state.user_role == "admin":
         st.info(f"Αυτόματο company_id που θα αποθηκευτεί: **{next_id}**")
 
         with st.form("insert_company_form"):
-            company_name = st.text_input("Όνομα Εταιρείας (company_name)")
+            company_name = st.text_input("Όνομα Κατηγορίας (company_name)")
             insert_c_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_c_btn:
@@ -504,17 +504,17 @@ if st.session_state.user_role == "admin":
                     try:
                         c_sheet = get_company_sheet()
                         c_sheet.append_row([next_id, company_name.strip()])
-                        st.success("Η εταιρεία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να την δείτε.")
+                        st.success("Η κατηγορία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να την δείτε.")
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης: {e}")
                 else:
-                    st.warning("Το όνομα της εταιρείας είναι υποχρεωτικό.")
+                    st.warning("Το όνομα της κατηγορίας είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Η: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΕΙΑΣ (DB_Company)
+    # ΣΕΛΙΔΑ Η: ΕΠΕΞΕΡΓΑΣΙΑ ΚΑΤΗΓΟΡΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit_company":
-        st.subheader("✏️ Φόρμα Επεξεργασίας Εταιρείας")
+        st.subheader("✏️ Φόρμα Επεξεργασίας Κατηγορίας")
         
         company_options = {}
         try:
@@ -526,14 +526,14 @@ if st.session_state.user_role == "admin":
                 if c_id:
                     company_options[f"ID: {c_id} - {c_name}"] = c_id
         except Exception as e:
-            st.error(f"Σφάλμα φόρτωσης εταιρειών: {e}")
+            st.error(f"Σφάλμα φόρτωσης κατηγοριών: {e}")
 
         if not company_options:
-            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες στο tab DB_Company.")
+            st.warning("Δεν βρέθηκαν καταχωρημένες κατηγορίες στο tab DB_Company.")
         else:
             with st.form("edit_company_form"):
-                selected_option = st.selectbox("Επιλέξτε Εταιρεία προς Τροποποίηση", options=list(company_options.keys()))
-                new_c_name = st.text_input("Νέο Όνομα Εταιρείας (company_name)")
+                selected_option = st.selectbox("Επιλέξτε Κατηγορία προς Τροποποίηση", options=list(company_options.keys()))
+                new_c_name = st.text_input("Νέο Όνομα Κατηγορίας (company_name)")
                 
                 edit_c_btn = st.form_submit_button("Οριστική Ενημέρωση")
                 
@@ -546,13 +546,13 @@ if st.session_state.user_role == "admin":
                             if cell:
                                 row_num = cell.row
                                 c_sheet.update_cell(row_num, 2, new_c_name.strip())
-                                st.success(f"Η εταιρεία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
+                                st.success(f"Η κατηγορία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
                             else:
-                                st.error(f"Δεν βρέθηκε η εταιρεία στο Google Sheet.")
+                                st.error(f"Δεν βρέθηκε η κατηγορία στο Google Sheet.")
                         except Exception as e:
                             st.error(f"Σφάλμα ενημέρωσης: {e}")
                     else:
-                        st.warning("Συμπληρώστε το νέο όνομα της εταιρείας.")
+                        st.warning("Συμπληρώστε το νέο όνομα της κατηγορίας.")
 
 
 # ==========================================
