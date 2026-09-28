@@ -48,6 +48,10 @@ def get_loans_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_loans")
 
+def get_robots_sheet():
+    client = get_gspread_client()
+    return client.open("DB_ROBOTICS").worksheet("db_robots")
+
 
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) & PAGE STATE
@@ -170,12 +174,18 @@ if st.session_state.user_role == "admin":
             if st.button("🤝 Δανεισμός Εξοπλισμού", use_container_width=True):
                 st.session_state.admin_subpage = "loans"
                 st.rerun()
+            if st.button("🤖 Κατασκευή Ρομπότ", use_container_width=True):
+                st.session_state.admin_subpage = "robot_build"
+                st.rerun()
         with col_m2:
             if st.button("✏️ Επεξεργασία Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "edit"
                 st.rerun()
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
                 st.session_state.admin_subpage = "broken"
+                st.rerun()
+            if st.button("✏️ Επεξεργασία Ρομπότ", use_container_width=True):
+                st.session_state.admin_subpage = "robot_edit"
                 st.rerun()
 
         st.markdown("---")
@@ -196,9 +206,12 @@ if st.session_state.user_role == "admin":
             if st.button("📋 Λίστα κατεστραμμένων", use_container_width=True):
                 st.session_state.admin_subpage = "broken_list"
                 st.rerun()
+            if st.button("🤖 Λίστα ρομπότ", use_container_width=True):
+                st.session_state.admin_subpage = "robot_list"
+                st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χρησιμοποιούνται)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -212,7 +225,11 @@ if st.session_state.user_role == "admin":
 
             l_sheet = get_loans_sheet()
             l_records = l_sheet.get_all_records()
+
+            r_sheet = get_robots_sheet()
+            r_records = r_sheet.get_all_records()
             
+            # Υπολογισμός χαλασμένων
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -224,6 +241,7 @@ if st.session_state.user_role == "admin":
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
 
+            # Υπολογισμός δανεισμένων
             loan_map = {}
             for lr in l_records:
                 status = str(lr.get("status", lr.get("Status", ""))).strip()
@@ -236,6 +254,49 @@ if st.session_state.user_role == "admin":
                         pass
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
+
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (υποστηρίζει ποσότητες για sensor1 και sensor2)
+            robot_usage_map = {}
+            for rr in r_records:
+                status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
+                if status_r != "Διαλυμένο":
+                    board = str(rr.get("board", "")).strip()
+                    
+                    s1 = str(rr.get("sensor1", "")).strip()
+                    try:
+                        s1_qty = int(rr.get("sensor1_qty", 1))
+                    except:
+                        s1_qty = 1
+
+                    s2 = str(rr.get("sensor2", "")).strip()
+                    try:
+                        s2_qty = int(rr.get("sensor2_qty", 1))
+                    except:
+                        s2_qty = 1
+
+                    batt = str(rr.get("battery", "")).strip()
+                    
+                    try:
+                        motors_qty = int(rr.get("motors_qty", 0))
+                    except:
+                        motors_qty = 0
+                    motors_name = str(rr.get("motors", "")).strip()
+
+                    try:
+                        wheels_qty = int(rr.get("wheels_qty", 0))
+                    except:
+                        wheels_qty = 0
+                    wheels_name = str(rr.get("wheels", "")).strip()
+
+                    chassis = str(rr.get("chassis", "")).strip()
+
+                    if board: robot_usage_map[board] = robot_usage_map.get(board, 0) + 1
+                    if s1: robot_usage_map[s1] = robot_usage_map.get(s1, 0) + s1_qty
+                    if s2: robot_usage_map[s2] = robot_usage_map.get(s2, 0) + s2_qty
+                    if batt: robot_usage_map[batt] = robot_usage_map.get(batt, 0) + 1
+                    if motors_name and motors_qty > 0: robot_usage_map[motors_name] = robot_usage_map.get(motors_name, 0) + motors_qty
+                    if wheels_name and wheels_qty > 0: robot_usage_map[wheels_name] = robot_usage_map.get(wheels_name, 0) + wheels_qty
+                    if chassis: robot_usage_map[chassis] = robot_usage_map.get(chassis, 0) + 1
 
             if p_records:
                 table_data = []
@@ -253,7 +314,9 @@ if st.session_state.user_role == "admin":
                     
                     broken_qty = broken_map.get(p_id, 0)
                     borrowed_qty = loan_map.get(p_name, 0)
-                    functional_qty = max(0, p_qty - broken_qty - borrowed_qty)
+                    used_qty = robot_usage_map.get(p_name, 0)
+                    
+                    functional_qty = max(0, p_qty - broken_qty - borrowed_qty - used_qty)
                     
                     table_data.append({
                         "ΚΩΔΙΚΟΣ": p_id,
@@ -262,6 +325,7 @@ if st.session_state.user_role == "admin":
                         "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
                         "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
                         "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty,
+                        "ΧΡΗΣΙΜΟΠΟΙΟΥΝΤΑΙ": used_qty,
                         "ΧΑΛΑΣΜΕΝΑ": broken_qty,
                         "ΔΑΝΕΙΣΜΕΝΑ": borrowed_qty
                     })
@@ -571,6 +635,283 @@ if st.session_state.user_role == "admin":
                                 st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
             except Exception as e:
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "robot_build":
+        st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
+
+        product_records = []
+        try:
+            p_sheet = get_products_sheet()
+            product_records = p_sheet.get_all_records()
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης προϊόντων: {e}")
+
+        if not product_records:
+            st.warning("Δεν βρέθηκαν προϊόντα στην αποθήκη.")
+        else:
+            product_names = [str(r.get("product_name", r.get("Name", ""))).strip() for r in product_records if str(r.get("product_name", r.get("Name", ""))).strip()]
+            product_names = sorted(list(set(product_names)))
+
+            with st.form("robot_build_form"):
+                operator_name = st.text_input("Όνομα Χειριστή")
+                robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)")
+
+                board = st.selectbox("Πλακέτα", options=[""] + product_names)
+                sensors_count = st.number_input("Αριθμός Αισθητήρων", min_value=0, max_value=10, step=1)
+                
+                col_s1, col_s2, col_s3 = st.columns(3)
+                with col_s1:
+                    sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names)
+                with col_s2:
+                    sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names)
+                with col_s3:
+                    sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, step=1)
+
+                battery = st.selectbox("Μπαταρία", options=[""] + product_names)
+                
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    motors = st.selectbox("Κινητήρες", options=[""] + product_names)
+                with col_m2:
+                    motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, step=1)
+
+                col_w1, col_w2 = st.columns(2)
+                with col_w1:
+                    wheels = st.selectbox("Ρόδες", options=[""] + product_names)
+                with col_w2:
+                    wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1)
+
+                chassis = st.selectbox("Σασί", options=[""] + product_names)
+                
+                build_submit = st.form_submit_button("Οριστική Κατασκευή Ρομπότ")
+
+                if build_submit:
+                    if operator_name.strip() and robot_name.strip():
+                        try:
+                            r_sheet = get_robots_sheet()
+                            r_records = r_sheet.get_all_records()
+                            next_robot_id = len(r_records) + 1 if r_records else 1
+
+                            # Αποθήκευση στο db_robots (συμπεριλαμβανομένου του sensor2_qty)
+                            r_sheet.append_row([
+                                next_robot_id,
+                                operator_name.strip(),
+                                robot_name.strip(),
+                                board,
+                                sensors_count,
+                                sensor1,
+                                sensor2,
+                                sensor2_qty,
+                                battery,
+                                motors,
+                                motors_qty,
+                                wheels,
+                                wheels_qty,
+                                chassis,
+                                "Ενεργό"
+                            ])
+                            st.success(f"Το ρομπότ '{robot_name}' κατασκευάστηκε και καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα αποθήκευσης ρομπότ: {e}")
+                    else:
+                        st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (db_robots)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "robot_edit":
+        st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
+
+        robot_records = []
+        product_records = []
+        try:
+            r_sheet = get_robots_sheet()
+            robot_records = r_sheet.get_all_records()
+
+            p_sheet = get_products_sheet()
+            product_records = p_sheet.get_all_records()
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
+
+        if not robot_records:
+            st.info("Δεν βρέθηκαν καταχωρημένα ρομπότ.")
+        else:
+            active_robots = []
+            for idx, r in enumerate(robot_records):
+                status = str(r.get("status", r.get("Status", "Ενεργό"))).strip()
+                if status != "Διαλυμένο":
+                    active_robots.append({"row_index": idx + 2, "data": r})
+
+            if not active_robots:
+                st.info("Δεν υπάρχουν ενεργά ρομπότ προς επεξεργασία.")
+            else:
+                robot_options = {f"ID: {r['data'].get('robot_id', r['data'].get('ID',''))} | Ρομπότ: {r['data'].get('robot_name', r['data'].get('Robot Name',''))} (Χειριστής: {r['data'].get('operator_name', r['data'].get('Operator',''))})": r for r in active_robots}
+
+                selected_robot_label = st.selectbox("Επιλέξτε Ρομπότ προς Τροποποίηση", options=list(robot_options.keys()))
+                chosen_robot = robot_options[selected_robot_label]
+                r_data = chosen_robot["data"]
+
+                product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
+                product_names = sorted(list(set(product_names)))
+
+                with st.form("robot_edit_form"):
+                    edit_operator = st.text_input("Νέο Όνομα Χειριστή", value=str(r_data.get("operator_name", r_data.get("Operator", ""))))
+                    edit_robot_name = st.text_input("Νέο Όνομα Ρομπότ", value=str(r_data.get("robot_name", r_data.get("Robot Name", ""))))
+
+                    curr_board = str(r_data.get("board", ""))
+                    edit_board = st.selectbox("Πλακέτα", options=[""] + product_names, index=(product_names.index(curr_board) + 1) if curr_board in product_names else 0)
+
+                    try:
+                        curr_scount = int(r_data.get("sensors_count", 0))
+                    except:
+                        curr_scount = 0
+                    edit_sensors_count = st.number_input("Αριθμός Αισθητήρων", min_value=0, max_value=10, value=curr_scount, step=1)
+
+                    curr_s1 = str(r_data.get("sensor1", ""))
+                    curr_s2 = str(r_data.get("sensor2", ""))
+                    try:
+                        curr_s2_qty = int(r_data.get("sensor2_qty", 1))
+                    except:
+                        curr_s2_qty = 1
+
+                    col_s1, col_s2, col_s3 = st.columns(3)
+                    with col_s1:
+                        edit_sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, index=(product_names.index(curr_s1) + 1) if curr_s1 in product_names else 0)
+                    with col_s2:
+                        edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0)
+                    with col_s3:
+                        edit_sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, value=curr_s2_qty, step=1)
+
+                    curr_batt = str(r_data.get("battery", ""))
+                    edit_battery = st.selectbox("Μπαταρία", options=[""] + product_names, index=(product_names.index(curr_batt) + 1) if curr_batt in product_names else 0)
+
+                    curr_motors = str(r_data.get("motors", ""))
+                    try:
+                        curr_mqty = int(r_data.get("motors_qty", 0))
+                    except:
+                        curr_mqty = 0
+
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        edit_motors = st.selectbox("Κινητήρες", options=[""] + product_names, index=(product_names.index(curr_motors) + 1) if curr_motors in product_names else 0)
+                    with col_m2:
+                        edit_motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, value=curr_mqty, step=1)
+
+                    curr_wheels = str(r_data.get("wheels", ""))
+                    try:
+                        curr_wqty = int(r_data.get("wheels_qty", 0))
+                    except:
+                        curr_wqty = 0
+
+                    col_w1, col_w2 = st.columns(2)
+                    with col_w1:
+                        edit_wheels = st.selectbox("Ρόδες", options=[""] + product_names, index=(product_names.index(curr_wheels) + 1) if curr_wheels in product_names else 0)
+                    with col_w2:
+                        edit_wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, value=curr_wqty, step=1)
+
+                    curr_chassis = str(r_data.get("chassis", ""))
+                    edit_chassis = st.selectbox("Σασί", options=[""] + product_names, index=(product_names.index(curr_chassis) + 1) if curr_chassis in product_names else 0)
+
+                    st.markdown("---")
+                    st.write("**Τι να γίνουν τα εξαρτήματα που τυχόν αφαιρέθηκαν από το ρομπότ;**")
+                    return_action = st.radio("Επιλογή διαχείρισης αλλαγής:", ["Επιστροφή στην αποθήκη (Λειτουργικά)", "Καταγραφή ως Κατεστραμμένα (db_broken)"])
+
+                    edit_submit = st.form_submit_button("Οριστική Ενημέρωση Ρομπότ")
+
+                    if edit_submit:
+                        try:
+                            r_sheet = get_robots_sheet()
+                            row_idx = chosen_robot["row_index"]
+
+                            # Ενημέρωση Google Sheet db_robots (στήλες 2 έως 14)
+                            r_sheet.update_cell(row_idx, 2, edit_operator.strip())
+                            r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
+                            r_sheet.update_cell(row_idx, 4, edit_board)
+                            r_sheet.update_cell(row_idx, 5, edit_sensors_count)
+                            r_sheet.update_cell(row_idx, 6, edit_sensor1)
+                            r_sheet.update_cell(row_idx, 7, edit_sensor2)
+                            r_sheet.update_cell(row_idx, 8, edit_sensor2_qty)
+                            r_sheet.update_cell(row_idx, 9, edit_battery)
+                            r_sheet.update_cell(row_idx, 10, edit_motors)
+                            r_sheet.update_cell(row_idx, 11, edit_motors_qty)
+                            r_sheet.update_cell(row_idx, 12, edit_wheels)
+                            r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
+                            r_sheet.update_cell(row_idx, 14, edit_chassis)
+
+                            if return_action == "Καταγραφή ως Κατεστραμμένα (db_broken)":
+                                diff_motors = curr_mqty - edit_motors_qty
+                                if diff_motors > 0 and curr_motors:
+                                    p_row = next((p for p in product_records if str(p.get("product_name", p.get("Name",""))).strip() == curr_motors), None)
+                                    if p_row:
+                                        p_id = str(p_row.get("product_id", p_row.get("id", ""))).strip()
+                                        p_comp = str(p_row.get("product_company", p_row.get("Company", ""))).strip()
+                                        p_sub = str(p_row.get("product_subcategory", p_row.get("Subcategory", ""))).strip()
+                                        p_total_qty = int(p_row.get("product_quantity", p_row.get("Quantity", 0)))
+                                        
+                                        op_res = max(0, p_total_qty - diff_motors)
+                                        b_sheet = get_broken_sheet()
+                                        b_sheet.append_row([p_id, p_comp, p_sub, curr_motors, diff_motors, op_res])
+
+                            st.success("Το ρομπότ ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης ρομπότ: {e}")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "robot_list":
+        st.subheader("📋 Λίστα Κατασκευασμένων Ρομπότ")
+
+        try:
+            r_sheet = get_robots_sheet()
+            r_records = r_sheet.get_all_records()
+
+            robot_list_data = []
+            for r in r_records:
+                r_id = str(r.get("robot_id", r.get("ID", ""))).strip()
+                op_name = str(r.get("operator_name", r.get("Operator", ""))).strip()
+                r_name = str(r.get("robot_name", r.get("Robot Name", ""))).strip()
+                board = str(r.get("board", r.get("Board", ""))).strip()
+                s_count = str(r.get("sensors_count", r.get("Sensors Count", ""))).strip()
+                
+                s1 = str(r.get("sensor1", "")).strip()
+                s2 = str(r.get("sensor2", "")).strip()
+                try:
+                    s2_q = int(r.get("sensor2_qty", 1))
+                except:
+                    s2_q = 1
+
+                s_types = f"{s1}, {s2} (x{s2_q})".strip(" , ()")
+                batt = str(r.get("battery", r.get("Battery", ""))).strip()
+                motors = f"{r.get('motors', '')} ({r.get('motors_qty', 0)})".strip()
+                wheels = f"{r.get('wheels', '')} ({r.get('wheels_qty', 0)})".strip()
+                chassis = str(r.get("chassis", r.get("Chassis", ""))).strip()
+                status = str(r.get("status", r.get("Status", "Ενεργό"))).strip()
+
+                robot_list_data.append({
+                    "ID": r_id,
+                    "ΧΕΙΡΙΣΤΗΣ": op_name,
+                    "ΟΝΟΜΑ ΡΟΜΠΟΤ": r_name,
+                    "ΠΛΑΚΕΤΑ": board,
+                    "ΑΡ. ΑΙΣΘΗΤΗΡΩΝ": s_count,
+                    "ΕΙΔΗ ΑΙΣΘΗΤΗΡΩΝ": s_types,
+                    "ΜΠΑΤΑΡΙΑ": batt,
+                    "ΚΙΝΗΤΗΡΕΣ": motors,
+                    "ΡΟΔΕΣ": wheels,
+                    "ΣΑΣΙ": chassis,
+                    "ΚΑΤΑΣΤΑΣΗ": status
+                })
+
+            if robot_list_data:
+                df_robots = pd.DataFrame(robot_list_data)
+                st.dataframe(df_robots, use_container_width=True, hide_index=True)
+            else:
+                st.info("Δεν βρέθηκαν καταχωρημένα ρομπότ.")
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης λίστας ρομπότ: {e}")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Ι: ΛΙΣΤΑ ΕΝΕΡΓΩΝ ΔΑΝΕΙΣΜΩΝ
