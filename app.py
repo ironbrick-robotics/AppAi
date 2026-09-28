@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE", layout="wide")
+st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -198,7 +198,6 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "insert":
         st.subheader("➕ Εισαγωγή - Επεξεργασία Προϊόντος: Φόρμα Εισαγωγής Νέου Προϊόντος")
         
-        # Υπολογισμός αυτόματου Product ID
         try:
             p_sheet = get_products_sheet()
             p_records = p_sheet.get_all_records()
@@ -218,7 +217,6 @@ if st.session_state.user_role == "admin":
 
         st.info(f"Αυτόματο Product ID που θα αποθηκευτεί: **{next_p_id}**")
 
-        # Φόρτωση εταιρειών για το dropdown
         company_list = []
         try:
             c_sheet = get_company_sheet()
@@ -236,14 +234,12 @@ if st.session_state.user_role == "admin":
             else:
                 selected_company = st.text_input("Εταιρεία (product_company) - (Δεν βρέθηκαν εταιρείες στο DB_Company)")
             
-            # Νέα υποκατηγορία (Kit / Part)
             subcategories = ["Kit", "Part"]
             selected_subcategory = st.selectbox("Κατηγορία (product_subcategory)", options=subcategories)
             
             p_name = st.text_input("Όνομα Προϊόντος (product_name)")
             p_qty = st.number_input("Τεμάχια (product_quantity)", min_value=0, step=1)
             
-            # Σχολικές χρονιές σε selectbox
             school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
             selected_year = st.selectbox("Σχολική Χρονιά (product_year)", options=school_years)
             
@@ -253,7 +249,6 @@ if st.session_state.user_role == "admin":
                 if p_name.strip() and selected_company:
                     try:
                         p_sheet = get_products_sheet()
-                        # Σειρά: product_id, product_company, product_subcategory, product_name, product_quantity, product_year
                         p_sheet.append_row([next_p_id, selected_company, selected_subcategory, p_name.strip(), p_qty, selected_year])
                         st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
@@ -267,57 +262,88 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "edit":
         st.subheader("✏️ Εισαγωγή - Επεξεργασία Προϊόντος: Φόρμα Επεξεργασίας / Διόρθωσης Προϊόντος")
         
-        # Φόρτωση εταιρειών για το dropdown επεξεργασίας
-        company_list = []
+        # Φόρτωση όλων των προϊόντων και εταιρειών
+        company_options = []
+        product_records = []
         try:
             c_sheet = get_company_sheet()
-            c_records = c_sheet.get_all_records()
-            for r in c_records:
+            c_recs = c_sheet.get_all_records()
+            for r in c_recs:
                 c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
-                if c_name and c_name not in company_list:
-                    company_list.append(c_name)
+                if c_name and c_name not in company_options:
+                    company_options.append(c_name)
+            
+            p_sheet = get_products_sheet()
+            product_records = p_sheet.get_all_records()
         except Exception as e:
-            pass
+            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
-        with st.form("edit_form"):
-            edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
+        if not company_options or not product_records:
+            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες ή προϊόντα.")
+        else:
+            # 1ο Dropdown: Επιλογή Εταιρείας
+            selected_edit_company = st.selectbox("Επιλέξτε Εταιρεία", options=company_options)
             
-            if company_list:
-                edit_company = st.selectbox("Νέα Εταιρεία (product_company)", options=company_list)
+            # Φιλτράρισμα προϊόντων που ανήκουν αποκλειστικά σε αυτήν την εταιρεία
+            filtered_products = []
+            for idx, r in enumerate(product_records):
+                comp = str(r.get("product_company", r.get("Company", ""))).strip()
+                if comp == selected_edit_company:
+                    p_id = str(r.get("product_id", r.get("Product ID", r.get("id", "")))).strip()
+                    p_name = str(r.get("product_name", r.get("Name", ""))).strip()
+                    filtered_products.append({"row_index": idx + 2, "id": p_id, "name": p_name, "data": r})
+
+            product_display_options = {f"ID: {p['id']} - {p['name']}": p for p in filtered_products}
+
+            if not product_display_options:
+                st.info(f"Δεν υπάρχουν προϊόντα για την εταιρεία '{selected_edit_company}'.")
             else:
-                edit_company = st.text_input("Νέα Εταιρεία (product_company)")
-            
-            subcategories = ["Kit", "Part"]
-            edit_subcategory = st.selectbox("Νέα Κατηγορία (product_subcategory)", options=subcategories)
-            
-            edit_name = st.text_input("Νέο Όνομα Προϊόντος (product_name)")
-            edit_qty = st.number_input("Νέα Τεμάχια (product_quantity)", min_value=0, step=1)
-            
-            school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
-            edit_year = st.selectbox("Νέα Σχολική Χρονιά (product_year)", options=school_years)
-            
-            edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
-            
-            if edit_btn:
-                if edit_id.strip():
-                    try:
-                        sheet = get_products_sheet()
-                        cell = sheet.find(edit_id.strip())
-                        if cell:
-                            row_num = cell.row
-                            # Ενημέρωση και των 6 πεδίων με τη σωστή σειρά
-                            sheet.update_cell(row_num, 2, edit_company.strip())
-                            sheet.update_cell(row_num, 3, edit_subcategory)
-                            sheet.update_cell(row_num, 4, edit_name.strip())
-                            sheet.update_cell(row_num, 5, edit_qty)
-                            sheet.update_cell(row_num, 6, edit_year)
-                            st.success(f"Το προϊόν με ID '{edit_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
+                # 2ο Dropdown: Επιλογή Προϊόντος
+                selected_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()))
+                chosen_product = product_display_options[selected_prod_label]
+                
+                # Ανάκτηση τρεχουσών τιμών για προ-συμπλήρωση
+                curr_data = chosen_product["data"]
+                curr_subcat = str(curr_data.get("product_subcategory", curr_data.get("Subcategory", "Kit"))).strip()
+                if curr_subcat not in ["Kit", "Part"]:
+                    curr_subcat = "Kit"
+                
+                curr_name = str(curr_data.get("product_name", curr_data.get("Name", ""))).strip()
+                
+                try:
+                    curr_qty = int(curr_data.get("product_quantity", curr_data.get("Quantity", 0)))
+                except:
+                    curr_qty = 0
+                
+                curr_year = str(curr_data.get("product_year", curr_data.get("Year", "2026-2027"))).strip()
+                school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
+                if curr_year not in school_years:
+                    curr_year = "2026-2027"
+
+                with st.form("edit_form"):
+                    edit_subcategory = st.selectbox("Νέα Κατηγορία (product_subcategory)", options=["Kit", "Part"], index=["Kit", "Part"].index(curr_subcat))
+                    edit_name = st.text_input("Νέο Όνομα Προϊόντος (product_name)", value=curr_name)
+                    edit_qty = st.number_input("Νέα Τεμάχια (product_quantity)", min_value=0, value=curr_qty, step=1)
+                    edit_year = st.selectbox("Νέα Σχολική Χρονιά (product_year)", options=school_years, index=school_years.index(curr_year))
+                    
+                    edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
+                    
+                    if edit_btn:
+                        if edit_name.strip():
+                            try:
+                                sheet = get_products_sheet()
+                                row_to_update = chosen_product["row_index"]
+                                # Ενημέρωση στη σωστή σειρά: ID (2), Company (3), Subcategory (4), Name (5), Qty (6), Year (7) -> (1-based index)
+                                sheet.update_cell(row_to_update, 2, selected_edit_company)
+                                sheet.update_cell(row_to_update, 3, edit_subcategory)
+                                sheet.update_cell(row_to_update, 4, edit_name.strip())
+                                sheet.update_cell(row_to_update, 5, edit_qty)
+                                sheet.update_cell(row_to_update, 6, edit_year)
+                                st.success(f"Το προϊόν ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
+                            except Exception as e:
+                                st.error(f"Σφάλμα ενημέρωσης: {e}")
                         else:
-                            st.error(f"Δεν βρέθηκε προϊόν με ID: {edit_id}")
-                    except Exception as e:
-                        st.error(f"Σφάλμα ενημέρωσης: {e}")
-                else:
-                    st.warning("Συμπληρώστε το Product ID που θέλετε να διορθώσετε.")
+                            st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Ε: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
