@@ -185,7 +185,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα & Λειτουργικά)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα, Δανεισμένα & Λειτουργικά)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -196,6 +196,9 @@ if st.session_state.user_role == "admin":
             
             b_sheet = get_broken_sheet()
             b_records = b_sheet.get_all_records()
+
+            l_sheet = get_loans_sheet()
+            l_records = l_sheet.get_all_records()
             
             # Υπολογισμός συνολικών χαλασμένων ανά προϊόν
             broken_map = {}
@@ -208,6 +211,21 @@ if st.session_state.user_role == "admin":
                     pass
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
+
+            # Υπολογισμός ενεργών δανεισμένων ανά προϊόν (μόνο όσοι είναι "Ενεργός Δανεισμός")
+            loan_map = {}
+            for lr in l_records:
+                status = str(lr.get("status", lr.get("Status", ""))).strip()
+                if status == "Ενεργός Δανεισμός":
+                    # Αναζήτηση βάσει ονόματος προϊόντος ή ID
+                    p_name_loan = str(lr.get("product_name", lr.get("Product Name", ""))).strip()
+                    l_qty = 0
+                    try:
+                        l_qty = int(lr.get("quantity_borrowed", lr.get("Quantity", 0)))
+                    except:
+                        pass
+                    if p_name_loan:
+                        loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
             if p_records:
                 table_data = []
@@ -224,7 +242,10 @@ if st.session_state.user_role == "admin":
                         pass
                     
                     broken_qty = broken_map.get(p_id, 0)
-                    functional_qty = max(0, p_qty - broken_qty)
+                    borrowed_qty = loan_map.get(p_name, 0)
+                    
+                    # Λειτουργικά = Συνολικά - Χαλασμένα - Δανεισμένα
+                    functional_qty = max(0, p_qty - broken_qty - borrowed_qty)
                     
                     table_data.append({
                         "ΚΩΔΙΚΟΣ": p_id,
@@ -233,6 +254,7 @@ if st.session_state.user_role == "admin":
                         "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
                         "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
                         "ΧΑΛΑΣΜΕΝΑ": broken_qty,
+                        "ΔΑΝΕΙΣΜΕΝΑ": borrowed_qty,
                         "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty
                     })
 
@@ -535,7 +557,6 @@ if st.session_state.user_role == "admin":
                             try:
                                 row_to_up = chosen_loan["row_index"]
                                 today_str = str(datetime.date.today())
-                                # Ενημέρωση κατάστασης (στήλη 6 -> status) και ημερομηνίας επιστροφής (στήλη 7 -> return_date)
                                 l_sheet.update_cell(row_to_up, 6, "Επιστράφηκε")
                                 l_sheet.update_cell(row_to_up, 7, today_str)
                                 st.success(f"Η επιστροφή καταχωρήθηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
