@@ -32,12 +32,11 @@ def get_gspread_client():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     return gspread.authorize(creds)
 
-@st.cache_resource
+# Χωρίς cache εδώ, ώστε να διαβάζει ΠΑΝΤΑ ζωντανά από το Google Sheet και να μην εμφανίζει τίποτα χωρίς χειροκίνητη ανανέωση
 def get_products_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
 
-@st.cache_resource
 def get_company_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("DB_Company")
@@ -134,7 +133,7 @@ with st.sidebar:
 # ==========================================
 if st.session_state.user_role == "admin":
     
-    # Κεντρικός τίτλος ενότητας
+    # Κεντρικός τίτλος ενότητας (ΚΛΕΙΔΩΜΕΝΟΣ)
     st.title("Διαχείριση εξοπλισμού Ρομποτικής")
 
     # ------------------------------------------
@@ -185,10 +184,9 @@ if st.session_state.user_role == "admin":
             records = sheet.get_all_records()
             if records:
                 df_products = pd.DataFrame(records)
-                # Αφαίρεση τυχόν περιττής πρώτης στήλης index αν υπάρχει
                 if df_products.shape[1] >= 5:
                     df_products = df_products.iloc[:, :5]
-                    df_products.columns = ["Product ID", "Company", "Name", "Quantity", "Year"]
+                    df_products.columns = ["ΚΩΔΙΚΟΣ", "ΕΤΑΙΡΙΑ", "ΟΝΟΜΑ ΠΡΟΙΟΝΤΟΣ", "ΤΕΜΑΧΙΑ", "ΣΧΟΛΙΚΗ ΧΡΟΝΙΑ"]
                 st.dataframe(df_products, use_container_width=True, hide_index=True)
             else:
                 st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
@@ -240,8 +238,11 @@ if st.session_state.user_role == "admin":
                 selected_company = st.text_input("Εταιρεία (product_company) - (Δεν βρέθηκαν εταιρίες στο DB_Company)")
             
             p_name = st.text_input("Όνομα Προιόντος (product_name)")
-            p_qty = st.number_input("Ποσότητα (Quantity)", min_value=0, step=1)
-            p_year = st.number_input("Έτος (Year)", min_value=2000, max_value=2100, value=2026, step=1)
+            p_qty = st.number_input("Τεμάχια (Quantity)", min_value=0, step=1)
+            
+            # Σχολικές χρονιές σε selectbox
+            school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
+            selected_year = st.selectbox("Σχολική Χρονιά (product_year)", options=school_years)
             
             insert_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
@@ -249,7 +250,7 @@ if st.session_state.user_role == "admin":
                 if p_name.strip() and selected_company:
                     try:
                         p_sheet = get_products_sheet()
-                        p_sheet.append_row([next_p_id, selected_company, p_name.strip(), p_qty, p_year])
+                        p_sheet.append_row([next_p_id, selected_company, p_name.strip(), p_qty, selected_year])
                         st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
@@ -266,8 +267,10 @@ if st.session_state.user_role == "admin":
             edit_id = st.text_input("Product ID προς διόρθωση (βάσει αυτού γίνεται η αναζήτηση)")
             edit_company = st.text_input("Νέα Εταιρεία (product_company)")
             edit_name = st.text_input("Νέο Όνομα Προιόντος (product_name)")
-            edit_qty = st.number_input("Νέα Ποσότητα", min_value=0, step=1)
-            edit_year = st.number_input("Νέο Έτος", min_value=2000, max_value=2100, value=2026, step=1)
+            edit_qty = st.number_input("Νέα Τεμάχια", min_value=0, step=1)
+            
+            school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
+            edit_year = st.selectbox("Νέα Σχολική Χρονιά (product_year)", options=school_years)
             
             edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
             
