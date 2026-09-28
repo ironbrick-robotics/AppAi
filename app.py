@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
+st.set_page_config(page_title="AppIDE", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -183,9 +183,12 @@ if st.session_state.user_role == "admin":
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
                 st.session_state.admin_subpage = "broken"
                 st.rerun()
+            if st.button("📋 Λίστα ενεργών δανεισμών", use_container_width=True):
+                st.session_state.admin_subpage = "active_loans_list"
+                st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με τη νέα σειρά στηλών)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -200,7 +203,6 @@ if st.session_state.user_role == "admin":
             l_sheet = get_loans_sheet()
             l_records = l_sheet.get_all_records()
             
-            # Υπολογισμός συνολικών χαλασμένων ανά προϊόν
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -212,7 +214,6 @@ if st.session_state.user_role == "admin":
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
 
-            # Υπολογισμός ενεργών δανεισμένων ανά προϊόν
             loan_map = {}
             for lr in l_records:
                 status = str(lr.get("status", lr.get("Status", ""))).strip()
@@ -242,11 +243,8 @@ if st.session_state.user_role == "admin":
                     
                     broken_qty = broken_map.get(p_id, 0)
                     borrowed_qty = loan_map.get(p_name, 0)
-                    
-                    # Λειτουργικά = Συνολικά - Χαλασμένα - Δανεισμένα
                     functional_qty = max(0, p_qty - broken_qty - borrowed_qty)
                     
-                    # Σειρά στηλών: ΣΥΝΟΛΙΚΑ, ΛΕΙΤΟΥΡΓΙΚΑ, ΧΑΛΑΣΜΕΝΑ, ΔΑΝΕΙΣΜΕΝΑ
                     table_data.append({
                         "ΚΩΔΙΚΟΣ": p_id,
                         "ΚΑΤΗΓΟΡΙΑ": p_comp,
@@ -563,6 +561,48 @@ if st.session_state.user_role == "admin":
                                 st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
             except Exception as e:
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ Ι: ΛΙΣΤΑ ΕΝΕΡΓΩΝ ΔΑΝΕΙΣΜΩΝ
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "active_loans_list":
+        st.subheader("📋 Λίστα Ενεργών Δανεισμών")
+        
+        try:
+            l_sheet = get_loans_sheet()
+            l_records = l_sheet.get_all_records()
+            
+            active_list_data = []
+            for r in l_records:
+                status = str(r.get("status", r.get("Status", ""))).strip()
+                if status == "Ενεργός Δανεισμός":
+                    l_id = str(r.get("loan_id", r.get("ID", ""))).strip()
+                    p_name = str(r.get("product_name", r.get("Product Name", ""))).strip()
+                    borrower = str(r.get("borrower_name", r.get("Borrower", ""))).strip()
+                    l_date = str(r.get("loan_date", r.get("Date", ""))).strip()
+                    
+                    l_qty = 0
+                    try:
+                        l_qty = int(r.get("quantity_borrowed", r.get("Quantity", 0)))
+                    except:
+                        pass
+                    
+                    active_list_data.append({
+                        "ID ΔΑΝΕΙΣΜΟΥ": l_id,
+                        "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
+                        "ΔΑΝΕΙΖΟΜΕΝΟΣ": borrower,
+                        "ΗΜΕΡΟΜΗΝΙΑ ΔΑΝΕΙΣΜΟΥ": l_date,
+                        "ΤΕΜΑΧΙΑ": l_qty,
+                        "ΚΑΤΑΣΤΑΣΗ": status
+                    })
+
+            if active_list_data:
+                df_active_loans = pd.DataFrame(active_list_data)
+                st.dataframe(df_active_loans, use_container_width=True, hide_index=True)
+            else:
+                st.info("Δεν βρέθηκαν ενεργοί δανεισμοί αυτή τη στιγμή.")
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης ενεργών δανεισμών: {e}")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ (DB_Company)
