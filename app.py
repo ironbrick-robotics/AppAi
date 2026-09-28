@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="AppIDE & DB", layout="wide")
+st.set_page_config(page_title="AppIDE", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -218,7 +218,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με υπολογισμό extra_parts)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Αχρησιμοποίητα και Extra Parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -262,7 +262,7 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (βασικά + extra_parts)
+            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (βασικά + extra_parts με ποσότητες)
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -295,7 +295,6 @@ if st.session_state.user_role == "admin":
                         wheels_qty = 0
                     wheels_name = str(rr.get("wheels", "")).strip()
 
-                    # Extra parts (μορφή: "Όνομα:Ποσότητα, Όνομα2:Ποσότητα2")
                     extra_str = str(rr.get("extra_parts", "")).strip()
 
                     if board: robot_usage_map[board] = robot_usage_map.get(board, 0) + 1
@@ -336,7 +335,6 @@ if st.session_state.user_role == "admin":
                     borrowed_qty = loan_map.get(p_name, 0)
                     used_qty = robot_usage_map.get(p_name, 0)
                     
-                    # ΑΧΡΗΣΙΜΟΠΟΙΗΤΑ = Συνολικά - Χαλασμένα - Δανεισμένα - Χρησιμοποιούνται
                     functional_qty = max(0, p_qty - broken_qty - borrowed_qty - used_qty)
                     
                     table_data.append({
@@ -668,7 +666,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με extra_parts)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με ποσότητες στα extra parts)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -721,13 +719,13 @@ if st.session_state.user_role == "admin":
                 st.markdown("---")
                 st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
                 
-                selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names)
+                selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, key="build_extras_multi")
                 
                 extra_qtys = {}
                 if selected_extras:
-                    st.write("Ορίστε ποσότητες για τα extra υλικά:")
+                    st.write("Ορίστε τεμάχια για καθένα από τα extra υλικά:")
                     for ex in selected_extras:
-                        extra_qtys[ex] = st.number_input(f"Ποσότητα για: {ex}", min_value=1, step=1, value=1, key=f"build_ex_{ex}")
+                        extra_qtys[ex] = st.number_input(f"Τεμάχια για: {ex}", min_value=1, step=1, value=1, key=f"build_ex_qty_{ex}")
                 
                 build_submit = st.form_submit_button("Οριστική Κατασκευή Ρομπότ")
 
@@ -738,10 +736,9 @@ if st.session_state.user_role == "admin":
                             r_records = r_sheet.get_all_records()
                             next_robot_id = len(r_records) + 1 if r_records else 1
 
-                            # Δημιουργία string για τα extra parts (π.χ. "Καλώδια:5, Αντιστάσεις:10")
+                            # Δημιουργία string με τις ακριβείς ποσότητες (π.χ. "Αντιστάσεις:8, Πινάκια:10")
                             extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
 
-                            # Στήλες: robot_id, operator_name, robot_name, board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty, chassis, extra_parts, status
                             r_sheet.append_row([
                                 next_robot_id,
                                 operator_name.strip(),
@@ -767,7 +764,7 @@ if st.session_state.user_role == "admin":
                         st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (με extra_parts)
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -804,7 +801,7 @@ if st.session_state.user_role == "admin":
                 product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
                 product_names = sorted(list(set(product_names)))
 
-                # Ανάγνωση προηγούμενων extra parts
+                # Ανάγνωση προηγούμενων extra parts και ποσοτήτων τους
                 existing_extras = {}
                 curr_extra_str = str(r_data.get("extra_parts", "")).strip()
                 if curr_extra_str:
@@ -878,14 +875,14 @@ if st.session_state.user_role == "admin":
                     st.markdown("---")
                     st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
                     default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
-                    edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, default=default_selected_extras)
+                    edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη", options=product_names, default=default_selected_extras, key="edit_extras_multi")
                     
                     edit_extra_qtys = {}
                     if edit_selected_extras:
-                        st.write("Ορίστε ποσότητες για τα extra υλικά:")
+                        st.write("Ορίστε τεμάχια για καθένα από τα extra υλικά:")
                         for ex in edit_selected_extras:
                             default_val = existing_extras.get(ex, 1)
-                            edit_extra_qtys[ex] = st.number_input(f"Ποσότητα για: {ex}", min_value=1, step=1, value=default_val, key=f"edit_ex_{ex}")
+                            edit_extra_qtys[ex] = st.number_input(f"Τεμάχια για: {ex}", min_value=1, step=1, value=default_val, key=f"edit_ex_qty_{ex}")
 
                     edit_submit = st.form_submit_button("Οριστική Ενημέρωση Ρομπότ")
 
@@ -916,7 +913,7 @@ if st.session_state.user_role == "admin":
                             st.error(f"Σφάλμα ενημέρωσης ρομπότ: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ (Εμφάνιση και των extra_parts)
+    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_list":
         st.subheader("📋 Λίστα Κατασκευασμένων Ρομπότ")
