@@ -278,7 +278,11 @@ if st.session_state.user_role == "admin":
             records = c_sheet.get_all_records()
             if records:
                 df_company = pd.DataFrame(records)
-                st.dataframe(df_company, use_container_width=True)
+                # Κρατάμε μόνο τις 2 πρώτες στήλες (ID και Επωνυμία) και μετονομάζουμε τους τίτλους
+                if df_company.shape[1] >= 2:
+                    df_company = df_company.iloc[:, :2]
+                    df_company.columns = ["ID", "ΕΠΩΝΥΜΙΑ"]
+                st.dataframe(df_company, use_container_width=True, hide_index=True)
             else:
                 st.info("Η καρτέλα DB_Company είναι προς το παρόν άδεια.")
         except Exception as e:
@@ -322,7 +326,6 @@ if st.session_state.user_role == "admin":
                 if company_name.strip():
                     try:
                         c_sheet = get_company_sheet()
-                        # Αποθήκευση με τα πεδία company_id και company_name
                         c_sheet.append_row([next_id, company_name.strip()])
                         st.success("Η εταιρία αποθηκεύτηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» (ή πηγαίνετε στη λίστα) για να την δείτε.")
                         st.cache_resource.clear()
@@ -371,7 +374,6 @@ if st.session_state.user_role == "admin":
                             cell = c_sheet.find(selected_id)
                             if cell:
                                 row_num = cell.row
-                                # Ενημέρωση της στήλης 2 (company_name)
                                 c_sheet.update_cell(row_num, 2, new_c_name.strip())
                                 st.success(f"Η εταιρία με ID '{selected_id}' ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» για να το δείτε.")
                                 st.cache_resource.clear()
