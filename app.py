@@ -181,7 +181,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα & Λειτουργικά)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
-        st.subheader("📋 Εισαγωγή - Επεξεργασία Προϊόντος: Λίστα Εξοπλισμού")
+        st.subheader("📋 Λίστα Εξοπλισμού")
         
         try:
             p_sheet = get_products_sheet()
