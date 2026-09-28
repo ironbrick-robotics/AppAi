@@ -9,7 +9,7 @@ import re
 import os
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="App - ROBOTICS", layout="wide")
+st.set_page_config(page_title="AppIDE & Admin Portal", layout="wide")
 
 # ==========================================
 # ΚΕΝΤΡΙΚΗ ΣΥΝΔΕΣΗ ΜΕ GOOGLE SHEETS (CONNECTIONS.GSHEETS)
@@ -174,9 +174,6 @@ if st.session_state.user_role == "admin":
             if st.button("🤝 Δανεισμός Εξοπλισμού", use_container_width=True):
                 st.session_state.admin_subpage = "loans"
                 st.rerun()
-            if st.button("🤖 Κατασκευή Ρομπότ", use_container_width=True):
-                st.session_state.admin_subpage = "robot_build"
-                st.rerun()
         with col_m2:
             if st.button("✏️ Επεξεργασία Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "edit"
@@ -184,6 +181,16 @@ if st.session_state.user_role == "admin":
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
                 st.session_state.admin_subpage = "broken"
                 st.rerun()
+
+        st.markdown("---")
+        st.subheader("🤖 Ρομπότ")
+
+        col_rob1, col_rob2 = st.columns(2)
+        with col_rob1:
+            if st.button("🤖 Κατασκευή Ρομπότ", use_container_width=True):
+                st.session_state.admin_subpage = "robot_build"
+                st.rerun()
+        with col_rob2:
             if st.button("✏️ Επεξεργασία Ρομπότ", use_container_width=True):
                 st.session_state.admin_subpage = "robot_edit"
                 st.rerun()
@@ -211,7 +218,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χρησιμοποιούνται)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με χρωματισμό εξαντλημένων)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -328,7 +335,18 @@ if st.session_state.user_role == "admin":
                     })
 
                 df_products = pd.DataFrame(table_data)
-                st.dataframe(df_products, use_container_width=True, hide_index=True)
+
+                # Συνάρτηση χρωματισμού γραμμής αν τα συνολικά τεμάχια είναι 0
+                def highlight_empty(row):
+                    try:
+                        if int(row["ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ"]) == 0:
+                            return ['background-color: rgba(255, 99, 71, 0.25)'] * len(row)
+                    except:
+                        pass
+                    return [''] * len(row)
+
+                styled_df = df_products.style.apply(highlight_empty, axis=1)
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
             else:
                 st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
         except Exception as e:
@@ -717,7 +735,7 @@ if st.session_state.user_role == "admin":
                         st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (Χωρίς ερωτήσεις για χαλασμένα)
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -820,7 +838,6 @@ if st.session_state.user_role == "admin":
                             r_sheet = get_robots_sheet()
                             row_idx = chosen_robot["row_index"]
 
-                            # Ενημέρωση Google Sheet db_robots (τα παλιά υλικά επιστρέφουν αυτόματα στα λειτουργικά μέσω του δυναμικού υπολογισμού)
                             r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                             r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
                             r_sheet.update_cell(row_idx, 4, edit_board)
