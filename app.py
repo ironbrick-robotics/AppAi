@@ -40,6 +40,10 @@ def get_company_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("DB_Company")
 
+def get_broken_sheet():
+    client = get_gspread_client()
+    return client.open("DB_ROBOTICS").worksheet("db_broken")
+
 
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) & PAGE STATE
@@ -158,7 +162,7 @@ if st.session_state.user_role == "admin":
         st.markdown("---")
         st.subheader("📦 Εισαγωγή - Επεξεργασία Προϊόντος")
 
-        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         with col_m1:
             if st.button("➕ Εισαγωγή Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "insert"
@@ -171,21 +175,66 @@ if st.session_state.user_role == "admin":
             if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
                 st.session_state.admin_subpage = "list"
                 st.rerun()
+        with col_m4:
+            if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
+                st.session_state.admin_subpage = "broken"
+                st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα & Λειτουργικά)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Εισαγωγή - Επεξεργασία Προϊόντος: Λίστα Εξοπλισμού")
         
         try:
-            sheet = get_products_sheet()
-            records = sheet.get_all_records()
-            if records:
-                df_products = pd.DataFrame(records)
-                if df_products.shape[1] >= 6:
-                    df_products = df_products.iloc[:, :6]
-                    df_products.columns = ["ΚΩΔΙΚΟΣ", "ΕΤΑΙΡΕΙΑ", "ΚΑΤΗΓΟΡΙΑ", "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ", "ΤΕΜΑΧΙΑ", "ΣΧΟΛΙΚΗ ΧΡΟΝΙΑ"]
+            p_sheet = get_products_sheet()
+            p_records = p_sheet.get_all_records()
+            
+            b_sheet = get_broken_sheet()
+            b_records = b_sheet.get_all_records()
+            
+            # Υπολογισμός συνολικών χαλασμένων ανά προϊόν (βάσει ID ή ονόματος)
+            broken_map = {}
+            for br in b_records:
+                b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
+                b_qty = 0
+                try:
+                    b_qty = int(br.get("broken_quantity", br.get("Quantity", 0)))
+                except:
+                    pass
+                if b_id:
+                    broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
+
+            if p_records:
+                table_data = []
+                for pr in p_records:
+                    p_id = str(pr.get("product_id", pr.get("Product ID", pr.get("id", "")))).strip()
+                    p_comp = str(pr.get("product_company", pr.get("Company", ""))).strip()
+                    p_sub = str(pr.get("product_subcategory", pr.get("Subcategory", ""))).strip()
+                    p_name = str(pr.get("product_name", pr.get("Name", ""))).strip()
+                    
+                    p_qty = 0
+                    try:
+                        p_qty = int(pr.get("product_quantity", pr.get("Quantity", 0)))
+                    except:
+                        pass
+                    
+                    # Χαλασμένα τεμάχια από το db_broken
+                    broken_qty = broken_map.get(p_id, 0)
+                    # Λειτουργικά τεμάχια = Συνολικά - Χαλασμένα (ελάχιστο 0)
+                    functional_qty = max(0, p_qty - broken_qty)
+                    
+                    table_data.append({
+                        "ΚΩΔΙΚΟΣ": p_id,
+                        "ΕΤΑΙΡΕΙΑ": p_comp,
+                        "ΚΑΤΗΓΟΡΙΑ": p_sub,
+                        "ΟΝΟΜΑ ΠΡΟΪΟΝΤΟΣ": p_name,
+                        "ΣΥΝΟΛΙΚΑ ΤΕΜΑΧΙΑ": p_qty,
+                        "ΧΑΛΑΣΜΕΝΑ": broken_qty,
+                        "ΛΕΙΤΟΥΡΓΙΚΑ": functional_qty
+                    })
+
+                df_products = pd.DataFrame(table_data)
                 st.dataframe(df_products, use_container_width=True, hide_index=True)
             else:
                 st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
@@ -240,16 +289,14 @@ if st.session_state.user_role == "admin":
             p_name = st.text_input("Όνομα Προϊόντος (product_name)")
             p_qty = st.number_input("Τεμάχια (product_quantity)", min_value=0, step=1)
             
-            school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
-            selected_year = st.selectbox("Σχολική Χρονιά (product_year)", options=school_years)
-            
             insert_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_btn:
                 if p_name.strip() and selected_company:
                     try:
                         p_sheet = get_products_sheet()
-                        p_sheet.append_row([next_p_id, selected_company, selected_subcategory, p_name.strip(), p_qty, selected_year])
+                        # Σειρά: product_id, product_company, product_subcategory, product_name, product_quantity
+                        p_sheet.append_row([next_p_id, selected_company, selected_subcategory, p_name.strip(), p_qty])
                         st.success("Το προϊόν αποθηκεύτηκε κανονικά! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
                         st.error(f"Σφάλμα εισαγωγής: {e}")
@@ -262,7 +309,6 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "edit":
         st.subheader("✏️ Εισαγωγή - Επεξεργασία Προϊόντος: Φόρμα Επεξεργασίας / Διόρθωσης Προϊόντος")
         
-        # Φόρτωση όλων των προϊόντων και εταιρειών
         company_options = []
         product_records = []
         try:
@@ -281,10 +327,8 @@ if st.session_state.user_role == "admin":
         if not company_options or not product_records:
             st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες ή προϊόντα.")
         else:
-            # 1ο Dropdown: Επιλογή Εταιρείας
             selected_edit_company = st.selectbox("Επιλέξτε Εταιρεία", options=company_options)
             
-            # Φιλτράρισμα προϊόντων που ανήκουν αποκλειστικά σε αυτήν την εταιρεία
             filtered_products = []
             for idx, r in enumerate(product_records):
                 comp = str(r.get("product_company", r.get("Company", ""))).strip()
@@ -298,11 +342,9 @@ if st.session_state.user_role == "admin":
             if not product_display_options:
                 st.info(f"Δεν υπάρχουν προϊόντα για την εταιρεία '{selected_edit_company}'.")
             else:
-                # 2ο Dropdown: Επιλογή Προϊόντος
                 selected_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()))
                 chosen_product = product_display_options[selected_prod_label]
                 
-                # Ανάκτηση τρεχουσών τιμών για προ-συμπλήρωση
                 curr_data = chosen_product["data"]
                 curr_subcat = str(curr_data.get("product_subcategory", curr_data.get("Subcategory", "Kit"))).strip()
                 if curr_subcat not in ["Kit", "Part"]:
@@ -314,17 +356,11 @@ if st.session_state.user_role == "admin":
                     curr_qty = int(curr_data.get("product_quantity", curr_data.get("Quantity", 0)))
                 except:
                     curr_qty = 0
-                
-                curr_year = str(curr_data.get("product_year", curr_data.get("Year", "2026-2027"))).strip()
-                school_years = ["2025-2026", "2026-2027", "2027-2028", "2028-2029", "2029-2030"]
-                if curr_year not in school_years:
-                    curr_year = "2026-2027"
 
                 with st.form("edit_form"):
                     edit_subcategory = st.selectbox("Νέα Κατηγορία (product_subcategory)", options=["Kit", "Part"], index=["Kit", "Part"].index(curr_subcat))
                     edit_name = st.text_input("Νέο Όνομα Προϊόντος (product_name)", value=curr_name)
                     edit_qty = st.number_input("Νέα Τεμάχια (product_quantity)", min_value=0, value=curr_qty, step=1)
-                    edit_year = st.selectbox("Νέα Σχολική Χρονιά (product_year)", options=school_years, index=school_years.index(curr_year))
                     
                     edit_btn = st.form_submit_button("Οριστική Ενημέρωση")
                     
@@ -333,12 +369,11 @@ if st.session_state.user_role == "admin":
                             try:
                                 sheet = get_products_sheet()
                                 row_to_update = chosen_product["row_index"]
-                                # Ενημέρωση στη σωστή σειρά: ID (2), Company (3), Subcategory (4), Name (5), Qty (6), Year (7) -> (1-based index)
+                                # Ενημέρωση σειράς: ID(2), Company(3), Subcategory(4), Name(5), Quantity(6)
                                 sheet.update_cell(row_to_update, 2, selected_edit_company)
                                 sheet.update_cell(row_to_update, 3, edit_subcategory)
                                 sheet.update_cell(row_to_update, 4, edit_name.strip())
                                 sheet.update_cell(row_to_update, 5, edit_qty)
-                                sheet.update_cell(row_to_update, 6, edit_year)
                                 st.success(f"Το προϊόν ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
                             except Exception as e:
                                 st.error(f"Σφάλμα ενημέρωσης: {e}")
@@ -346,7 +381,80 @@ if st.session_state.user_role == "admin":
                             st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
+    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "broken":
+        st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων (db_broken)")
+        
+        company_options = []
+        product_records = []
+        try:
+            c_sheet = get_company_sheet()
+            c_recs = c_sheet.get_all_records()
+            for r in c_recs:
+                c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
+                if c_name and c_name not in company_options:
+                    company_options.append(c_name)
+            
+            p_sheet = get_products_sheet()
+            product_records = p_sheet.get_all_records()
+        except Exception as e:
+            st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
+
+        if not company_options or not product_records:
+            st.warning("Δεν βρέθηκαν καταχωρημένες εταιρείες ή προϊόντα.")
+        else:
+            selected_b_company = st.selectbox("Επιλέξτε Εταιρεία", options=company_options, key="b_comp")
+            
+            filtered_products = []
+            for r in product_records:
+                comp = str(r.get("product_company", r.get("Company", ""))).strip()
+                if comp == selected_b_company:
+                    p_id = str(r.get("product_id", r.get("Product ID", r.get("id", "")))).strip()
+                    p_sub = str(r.get("product_subcategory", r.get("Subcategory", ""))).strip()
+                    p_name = str(r.get("product_name", r.get("Name", ""))).strip()
+                    try:
+                        p_qty = int(r.get("product_quantity", r.get("Quantity", 0)))
+                    except:
+                        p_qty = 0
+                    filtered_products.append({"id": p_id, "subcategory": p_sub, "name": p_name, "quantity": p_qty})
+
+            product_display_options = {f"ID: {p['id']} - {p['name']} (Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
+
+            if not product_display_options:
+                st.info(f"Δεν υπάρχουν προϊόντα για την εταιρεία '{selected_b_company}'.")
+            else:
+                selected_b_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()), key="b_prod")
+                chosen_b_prod = product_display_options[selected_b_prod_label]
+
+                with st.form("broken_form"):
+                    broken_qty = st.number_input("Κατεστραμμένα Τεμάχια (broken_quantity)", min_value=0, max_value=chosen_b_prod["quantity"], step=1)
+                    submit_broken = st.form_submit_button("Καταχώριση Κατεστραμμένων")
+                    
+                    if submit_broken:
+                        if broken_qty > 0:
+                            try:
+                                # Αυτόματη πράξη: product_quantity - broken_quantity
+                                operation_result = chosen_b_prod["quantity"] - broken_qty
+                                
+                                b_sheet = get_broken_sheet()
+                                # Πεδία db_broken: broken_id, broken_company, broken_subcategory, broken_name, broken_quantity, operation
+                                b_sheet.append_row([
+                                    chosen_b_prod["id"],
+                                    selected_b_company,
+                                    chosen_b_prod["subcategory"],
+                                    chosen_b_prod["name"],
+                                    broken_qty,
+                                    operation_result
+                                ])
+                                st.success(f"Καταγράφηκαν {broken_qty} κατεστραμμένα τεμάχια. Υπόλοιπο λειτουργικά: {operation_result}. Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                            except Exception as e:
+                                st.error(f"Σφάλμα αποθήκευσης κατεστραμμένων: {e}")
+                        else:
+                            st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΕΤΑΙΡΕΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
         st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Εταιρειών")
@@ -366,7 +474,7 @@ if st.session_state.user_role == "admin":
             st.error(f"Σφάλμα φόρτωσης δεδομένων εταιρειών: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ ΣΤ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΕΙΑΣ (DB_Company)
+    # ΣΕΛΙΔΑ Ζ: ΕΙΣΑΓΩΓΗ ΝΕΑΣ ΕΤΑΙΡΕΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "insert_company":
         st.subheader("➕ ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Φόρμα Εισαγωγής Νέας Εταιρείας")
@@ -406,7 +514,7 @@ if st.session_state.user_role == "admin":
                     st.warning("Το όνομα της εταιρείας είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ζ: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΕΙΑΣ (DB_Company)
+    # ΣΕΛΙΔΑ Η: ΕΠΕΞΕΡΓΑΣΙΑ ΕΤΑΙΡΕΙΑΣ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit_company":
         st.subheader("✏️ ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Φόρμα Επεξεργασίας / Διόρθωσης Εταιρείας")
