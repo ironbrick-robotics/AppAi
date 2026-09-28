@@ -44,6 +44,10 @@ def get_broken_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_broken")
 
+def get_loans_sheet():
+    client = get_gspread_client()
+    return client.open("DB_ROBOTICS").worksheet("db_loans")
+
 
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) & PAGE STATE
@@ -169,6 +173,9 @@ if st.session_state.user_role == "admin":
             if st.button("📋 Λίστα εξοπλισμού", use_container_width=True):
                 st.session_state.admin_subpage = "list"
                 st.rerun()
+            if st.button("🤝 Δανεισμός Εξοπλισμού", use_container_width=True):
+                st.session_state.admin_subpage = "loans"
+                st.rerun()
         with col_m2:
             if st.button("✏️ Επεξεργασία Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "edit"
@@ -190,7 +197,7 @@ if st.session_state.user_role == "admin":
             b_sheet = get_broken_sheet()
             b_records = b_sheet.get_all_records()
             
-            # Υπολογισμός συνολικών χαλασμένων ανά προϊόν (βάσει ID ή ονόματος)
+            # Υπολογισμός συνολικών χαλασμένων ανά προϊόν
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -216,9 +223,7 @@ if st.session_state.user_role == "admin":
                     except:
                         pass
                     
-                    # Χαλασμένα τεμάχια από το db_broken
                     broken_qty = broken_map.get(p_id, 0)
-                    # Λειτουργικά τεμάχια = Συνολικά - Χαλασμένα (ελάχιστο 0)
                     functional_qty = max(0, p_qty - broken_qty)
                     
                     table_data.append({
@@ -292,7 +297,6 @@ if st.session_state.user_role == "admin":
                 if p_name.strip() and selected_company:
                     try:
                         p_sheet = get_products_sheet()
-                        # Σειρά: product_id, product_company, product_subcategory, product_name, product_quantity
                         p_sheet.append_row([next_p_id, selected_company, selected_subcategory, p_name.strip(), p_qty])
                         st.success("Το προϊόν αποθηκεύτηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε στη λίστα.")
                     except Exception as e:
@@ -366,7 +370,6 @@ if st.session_state.user_role == "admin":
                             try:
                                 sheet = get_products_sheet()
                                 row_to_update = chosen_product["row_index"]
-                                # Ενημέρωση σειράς: ID(2), Company(3), Subcategory(4), Name(5), Quantity(6)
                                 sheet.update_cell(row_to_update, 2, selected_edit_company)
                                 sheet.update_cell(row_to_update, 3, edit_subcategory)
                                 sheet.update_cell(row_to_update, 4, edit_name.strip())
@@ -378,7 +381,7 @@ if st.session_state.user_role == "admin":
                             st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ 
+    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "broken":
         st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων")
@@ -431,11 +434,8 @@ if st.session_state.user_role == "admin":
                     if submit_broken:
                         if broken_qty > 0:
                             try:
-                                # Αυτόματη πράξη: product_quantity - broken_quantity
                                 operation_result = chosen_b_prod["quantity"] - broken_qty
-                                
                                 b_sheet = get_broken_sheet()
-                                # Πεδία db_broken: broken_id, broken_company, broken_subcategory, broken_name, broken_quantity, operation
                                 b_sheet.append_row([
                                     chosen_b_prod["id"],
                                     selected_b_company,
@@ -451,7 +451,101 @@ if st.session_state.user_role == "admin":
                             st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ 
+    # ΣΕΛΙΔΑ Θ: ΔΑΝΕΙΣΜΟΣ ΕΞΟΠΛΙΣΜΟΥ (db_loans)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "loans":
+        st.subheader("🤝 Δανεισμός & Επιστροφή Εξοπλισμού")
+
+        tab_borrow, tab_return = st.tabs(["📝 Καταγραφή Νέου Δανεισμού", "↩️ Επιστροφή / Ενεργοί Δανεισμοί"])
+
+        with tab_borrow:
+            product_records = []
+            try:
+                p_sheet = get_products_sheet()
+                product_records = p_sheet.get_all_records()
+            except Exception as e:
+                st.error(f"Σφάλμα φόρτωσης προϊόντων: {e}")
+
+            if not product_records:
+                st.warning("Δεν βρέθηκαν διαθέσιμα προϊόντα.")
+            else:
+                prod_options = {f"ID: {r.get('product_id', r.get('id', ''))} - {r.get('product_name', r.get('Name', ''))} (Κατηγορία: {r.get('product_company', r.get('Company', ''))})": r for r in product_records}
+
+                with st.form("loan_form"):
+                    selected_prod_label = st.selectbox("Επιλέξτε Προϊόν για Δανεισμό", options=list(prod_options.keys()))
+                    chosen_p = prod_options[selected_prod_label]
+                    
+                    borrower_name = st.text_input("Όνομα Δανειζόμενου (Μέλους Ομάδας)")
+                    quantity_borrowed = st.number_input("Ποσότητα Δανεισμού", min_value=1, step=1)
+                    
+                    loan_submit = st.form_submit_button("Καταχώριση Δανεισμού")
+
+                    if loan_submit:
+                        if borrower_name.strip() and quantity_borrowed > 0:
+                            try:
+                                l_sheet = get_loans_sheet()
+                                l_records = l_sheet.get_all_records()
+                                next_loan_id = len(l_records) + 1 if l_records else 1
+                                
+                                prod_name_val = str(chosen_p.get("product_name", chosen_p.get("Name", ""))).strip()
+                                loan_date_val = str(datetime.date.today())
+                                status_val = "Ενεργός Δανεισμός"
+                                return_date_val = "-"
+
+                                # Στήλες: loan_id, product_name, borrower_name, loan_date, quantity_borrowed, status, return_date
+                                l_sheet.append_row([
+                                    next_loan_id,
+                                    prod_name_val,
+                                    borrower_name.strip(),
+                                    loan_date_val,
+                                    quantity_borrowed,
+                                    status_val,
+                                    return_date_val
+                                ])
+                                st.success(f"Ο δανεισμός καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                            except Exception as e:
+                                st.error(f"Σφάλμα καταγραφής δανεισμού: {e}")
+                        else:
+                            st.warning("Συμπληρώστε το όνομα του δανειζόμενου και έγκυρη ποσότητα.")
+
+        with tab_return:
+            st.write("Ενεργοί Δανεισμοί που εκκρεμούν προς επιστροφή:")
+            try:
+                l_sheet = get_loans_sheet()
+                l_records = l_sheet.get_all_records()
+                
+                active_loans = []
+                for idx, r in enumerate(l_records):
+                    status = str(r.get("status", r.get("Status", ""))).strip()
+                    if status == "Ενεργός Δανεισμός":
+                        active_loans.append({"row_index": idx + 2, "data": r})
+
+                if not active_loans:
+                    st.info("Δεν υπάρχουν ενεργοί δανεισμοί αυτή τη στιγμή.")
+                else:
+                    active_options = {f"Δανεισμός ID: {l['data'].get('loan_id', l['data'].get('ID',''))} | Προϊόν: {l['data'].get('product_name', l['data'].get('Product Name',''))} | Ποιος: {l['data'].get('borrower_name', l['data'].get('Borrower',''))}": l for l in active_loans}
+
+                    with st.form("return_form"):
+                        selected_active_label = st.selectbox("Επιλέξτε Δανεισμό προς Επιστροφή", options=list(active_options.keys()))
+                        chosen_loan = active_options[selected_active_label]
+                        
+                        return_submit = st.form_submit_button("Καταχώριση Επιστροφής")
+
+                        if return_submit:
+                            try:
+                                row_to_up = chosen_loan["row_index"]
+                                today_str = str(datetime.date.today())
+                                # Ενημέρωση κατάστασης (στήλη 6 -> status) και ημερομηνίας επιστροφής (στήλη 7 -> return_date)
+                                l_sheet.update_cell(row_to_up, 6, "Επιστράφηκε")
+                                l_sheet.update_cell(row_to_up, 7, today_str)
+                                st.success(f"Η επιστροφή καταχωρήθηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                            except Exception as e:
+                                st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
+            except Exception as e:
+                st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
+
+    # ------------------------------------------
+    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ (DB_Company)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
         st.subheader("📋 Λίστα Κατηγοριών")
