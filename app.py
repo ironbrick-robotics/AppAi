@@ -114,15 +114,14 @@ if st.sidebar.button("Αποσύνδεση"):
 if st.session_state.user_role == "admin":
     
     # Κεντρικός τίτλος ενότητας
-    st.title("🛠️ Admin Portal: Διαχείριση Συστήματος")
-    st.write("Διαχείριση δεδομένων στο Google Sheet **DB_ROBOTICS**.")
+    st.title("Διαχείριση Εξοπλισμού Ρομποτικής")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
         st.subheader("🏢 ΕΤΑΙΡΙΑ ΠΡΟΙΟΝΤΟΣ")
-        st.write("Διαχείριση εταιριών (tab DB_Company):")
+        st.write("Διαχείριση εταιριών:")
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
@@ -140,7 +139,6 @@ if st.session_state.user_role == "admin":
 
         st.markdown("---")
         st.subheader("📦 Εισαγωγή - Επεξεργασία Προιόντος")
-        st.write("Επιλέξτε μια από τις παρακάτω ενέργειες:")
 
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
