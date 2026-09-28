@@ -143,7 +143,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Α: ΚΕΝΤΡΙΚΟ ΜΕΝΟΥ ΔΙΑΧΕΙΡΙΣΤΗ
     # ------------------------------------------
     if st.session_state.admin_subpage == "menu":
-        st.subheader("🏢 Εταιρεία Προϊόντος")
+        st.subheader("🏢 Κατηγορία Προϊόντος")
 
         col_c1, col_c2 = st.columns(2)
         with col_c1:
@@ -181,7 +181,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Χαλασμένα & Λειτουργικά)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
-        st.subheader("📋 Εισαγωγή - Επεξεργασία Προϊόντος: Λίστα Εξοπλισμού")
+        st.subheader("📋 Λίστα Εξοπλισμού")
         
         try:
             p_sheet = get_products_sheet()
@@ -378,7 +378,7 @@ if st.session_state.user_role == "admin":
                             st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
+    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ 
     # ------------------------------------------
     elif st.session_state.admin_subpage == "broken":
         st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων")
@@ -451,10 +451,10 @@ if st.session_state.user_role == "admin":
                             st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ (DB_Company)
+    # ΣΕΛΙΔΑ ΣΤ: ΛΙΣΤΑ ΚΑΤΗΓΟΡΙΩΝ 
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list_company":
-        st.subheader("📋 ΕΤΑΙΡΕΙΑ ΠΡΟΪΟΝΤΟΣ: Λίστα Κατηγοριών")
+        st.subheader("📋 Λίστα Κατηγοριών")
         
         try:
             c_sheet = get_company_sheet()
@@ -496,7 +496,7 @@ if st.session_state.user_role == "admin":
         st.info(f"Αυτόματο company_id που θα αποθηκευτεί: **{next_id}**")
 
         with st.form("insert_company_form"):
-            company_name = st.text_input("Όνομα Κατηγορίας (company_name)")
+            company_name = st.text_input("Όνομα Κατηγορίας")
             insert_c_btn = st.form_submit_button("Οριστική Εισαγωγή")
             
             if insert_c_btn:
@@ -533,7 +533,7 @@ if st.session_state.user_role == "admin":
         else:
             with st.form("edit_company_form"):
                 selected_option = st.selectbox("Επιλέξτε Κατηγορία προς Τροποποίηση", options=list(company_options.keys()))
-                new_c_name = st.text_input("Νέο Όνομα Κατηγορίας (company_name)")
+                new_c_name = st.text_input("Νέο Όνομα Κατηγορίας")
                 
                 edit_c_btn = st.form_submit_button("Οριστική Ενημέρωση")
                 
