@@ -117,13 +117,11 @@ if not st.session_state.logged_in:
 with st.sidebar:
     st.markdown("### ⚙️ Γενικός Έλεγχος")
     
-    # 1. Κουμπί Ανανέωσης Δεδομένων (Καθαρισμός cache)
     if st.button("🔄 Ανανέωση Δεδομένων", use_container_width=True):
         st.cache_resource.clear()
         st.success("Η μνήμη ανανεώθηκε!")
         st.rerun()
 
-    # 2. Κουμπί Επιστροφή στο Μενού (αν δεν είμαστε ήδη στο μενού)
     if st.session_state.user_role == "admin" and st.session_state.admin_subpage != "menu":
         if st.button("🏠 Επιστροφή στο Μενού", use_container_width=True):
             st.session_state.admin_subpage = "menu"
@@ -131,7 +129,6 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # 3. Κουμπί Αποσύνδεσης
     if st.button("🚪 Αποσύνδεση", use_container_width=True):
         st.session_state.logged_in = False
         st.session_state.user_role = None
@@ -144,7 +141,6 @@ with st.sidebar:
 # ==========================================
 if st.session_state.user_role == "admin":
     
-    # Κεντρικός τίτλος ενότητας (ΚΛΕΙΔΩΜΕΝΟΣ)
     st.title("Διαχείριση εξοπλισμού Ρομποτικής")
 
     # ------------------------------------------
@@ -218,7 +214,7 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ (ΠΡΟΒΟΛΗ με Αχρησιμοποίητα και Extra Parts)
+    # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "list":
         st.subheader("📋 Λίστα Εξοπλισμού")
@@ -236,7 +232,6 @@ if st.session_state.user_role == "admin":
             r_sheet = get_robots_sheet()
             r_records = r_sheet.get_all_records()
             
-            # Υπολογισμός χαλασμένων
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -248,7 +243,6 @@ if st.session_state.user_role == "admin":
                 if b_id:
                     broken_map[b_id] = broken_map.get(b_id, 0) + b_qty
 
-            # Υπολογισμός δανεισμένων
             loan_map = {}
             for lr in l_records:
                 status = str(lr.get("status", lr.get("Status", ""))).strip()
@@ -262,7 +256,6 @@ if st.session_state.user_role == "admin":
                     if p_name_loan:
                         loan_map[p_name_loan] = loan_map.get(p_name_loan, 0) + l_qty
 
-            # Υπολογισμός χρησιμοποιούμενων σε ρομπότ ανά προϊόν (βασικά + extra_parts με ποσότητες)
             robot_usage_map = {}
             for rr in r_records:
                 status_r = str(rr.get("status", rr.get("Status", "Ενεργό"))).strip()
@@ -399,6 +392,7 @@ if st.session_state.user_role == "admin":
                 c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
                 if c_name and c_name not in company_list:
                     company_list.append(c_name)
+            company_list = sorted(company_list)
         except Exception as e:
             pass
 
@@ -408,7 +402,7 @@ if st.session_state.user_role == "admin":
             else:
                 selected_company = st.text_input("Κατηγορία (product_company) - (Δεν βρέθηκαν κατηγορίες στο DB_Company)")
             
-            subcategories = ["Kit", "Part"]
+            subcategories = sorted(["Kit", "Part"])
             selected_subcategory = st.selectbox("Υποκατηγορία (product_subcategory)", options=subcategories)
             
             p_name = st.text_input("Όνομα Προϊόντος (product_name)")
@@ -431,7 +425,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit":
-        st.subheader("✏️️ Φόρμα Επεξεργασίας Προϊόντος")
+        st.subheader("✏️ Φόρμα Επεξεργασίας Προϊόντος")
         
         company_options = []
         product_records = []
@@ -442,6 +436,7 @@ if st.session_state.user_role == "admin":
                 c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
                 if c_name and c_name not in company_options:
                     company_options.append(c_name)
+            company_options = sorted(company_options)
             
             p_sheet = get_products_sheet()
             product_records = p_sheet.get_all_records()
@@ -461,6 +456,7 @@ if st.session_state.user_role == "admin":
                     p_name = str(r.get("product_name", r.get("Name", ""))).strip()
                     filtered_products.append({"row_index": idx + 2, "id": p_id, "name": p_name, "data": r})
 
+            filtered_products = sorted(filtered_products, key=lambda x: x["name"])
             product_display_options = {f"ID: {p['id']} - {p['name']}": p for p in filtered_products}
 
             if not product_display_options:
@@ -497,14 +493,14 @@ if st.session_state.user_role == "admin":
                                 sheet.update_cell(row_to_update, 3, edit_subcategory)
                                 sheet.update_cell(row_to_update, 4, edit_name.strip())
                                 sheet.update_cell(row_to_update, 5, edit_qty)
-                                st.success(f"Το προϊόν ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
+                                st.success("Το προϊόν ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού για να το δείτε.")
                             except Exception as e:
                                 st.error(f"Σφάλμα ενημέρωσης: {e}")
                         else:
                             st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken με Νέα Καταχώριση & Τροποποίηση)
+    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "broken":
         st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων")
@@ -520,6 +516,7 @@ if st.session_state.user_role == "admin":
                 c_name = str(r.get("company_name", r.get("Company Name", ""))).strip()
                 if c_name and c_name not in company_options:
                     company_options.append(c_name)
+            company_options = sorted(company_options)
             
             p_sheet = get_products_sheet()
             product_records = p_sheet.get_all_records()
@@ -545,7 +542,8 @@ if st.session_state.user_role == "admin":
                             p_qty = 0
                         filtered_products.append({"id": p_id, "subcategory": p_sub, "name": p_name, "quantity": p_qty})
 
-                product_display_options = {f"ID: {p['id']} - {p['name']} (Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
+                filtered_products = sorted(filtered_products, key=lambda x: x["name"])
+                product_display_options = {f"[{p['subcategory']}] {p['name']} (ID: {p['id']} - Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
 
                 if not product_display_options:
                     st.info(f"Δεν υπάρχουν προϊόντα για την κατηγορία '{selected_b_company}'.")
@@ -586,16 +584,23 @@ if st.session_state.user_role == "admin":
             if not b_records:
                 st.info("Δεν υπάρχουν καταχωρημένα κατεστραμμένα προϊόντα προς τροποποίηση.")
             else:
-                broken_options = {}
+                broken_options = []
                 for idx, br in enumerate(b_records):
                     br_id = str(br.get("broken_id", br.get("ID", ""))).strip()
+                    br_comp = str(br.get("broken_company", br.get("Company", ""))).strip()
                     br_name = str(br.get("broken_name", br.get("Name", ""))).strip()
                     br_qty = br.get("broken_quantity", br.get("Quantity", 0))
-                    label = f"Γραμμή {idx+2} | ID: {br_id} - {br_name} (Κατεστραμμένα: {br_qty})"
-                    broken_options[label] = {"row_index": idx + 2, "data": br}
+                    broken_options.append({
+                        "label": f"[{br_comp}] {br_name} (ID: {br_id} - Κατεστραμμένα: {br_qty})",
+                        "row_index": idx + 2,
+                        "data": br
+                    })
 
-                selected_br_label = st.selectbox("Επιλέξτε Καταχώριση Κατεστραμμένων προς Διόρθωση", options=list(broken_options.keys()))
-                chosen_br_item = broken_options[selected_br_label]
+                broken_options = sorted(broken_options, key=lambda x: x["label"])
+                broken_options_dict = {item["label"]: item for item in broken_options}
+
+                selected_br_label = st.selectbox("Επιλέξτε Καταχώριση Κατεστραμμένων προς Διόρθωση", options=list(broken_options_dict.keys()))
+                chosen_br_item = broken_options_dict[selected_br_label]
                 br_data = chosen_br_item["data"]
 
                 try:
@@ -610,7 +615,6 @@ if st.session_state.user_role == "admin":
                     if edit_broken_submit:
                         try:
                             row_to_up = chosen_br_item["row_index"]
-                            # Ενημερώνουμε τη στήλη 5 (broken_quantity)
                             b_sheet.update_cell(row_to_up, 5, new_broken_qty)
                             st.success(f"Η εγγραφή κατεστραμμένων ενημερώθηκε σε {new_broken_qty} τεμάχια! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                         except Exception as e:
@@ -622,7 +626,7 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "loans":
         st.subheader("🤝 Δανεισμός & Επιστροφή Εξοπλισμού")
 
-        tab_borrow, tab_return, tab_edit_loan = st.tabs(["📝 Καταγραφή Νέου Δανεισμού", "↩️ Επιστροφή / Ενεργοί Δανεισμοί", "✏️ Τροποποίηση Δανεισμού"])
+        tab_borrow, tab_return, tab_edit_loan = st.tabs(["📝 Καταγραφή Νέου Δανεισμού", "↩️ Επιστροφή / Ενεργοί Δανεισμοί", "✏️️ Τροποποίηση Δανεισμού"])
 
         with tab_borrow:
             product_records = []
@@ -635,7 +639,16 @@ if st.session_state.user_role == "admin":
             if not product_records:
                 st.warning("Δεν βρέθηκαν διαθέσιμα προϊόντα.")
             else:
-                prod_options = {f"ID: {r.get('product_id', r.get('id', ''))} - {r.get('product_name', r.get('Name', ''))} (Κατηγορία: {r.get('product_company', r.get('Company', ''))})": r for r in product_records}
+                formatted_products = []
+                for r in product_records:
+                    p_comp = str(r.get("product_company", r.get("Company", ""))).strip()
+                    p_name = str(r.get("product_name", r.get("Name", ""))).strip()
+                    p_id = str(r.get("product_id", r.get("Product ID", r.get("id", "")))).strip()
+                    label = f"[{p_comp}] {p_name} (ID: {p_id})"
+                    formatted_products.append({"label": label, "data": r})
+
+                formatted_products = sorted(formatted_products, key=lambda x: x["label"])
+                prod_options = {item["label"]: item["data"] for item in formatted_products}
 
                 selected_prod_label = st.selectbox("Επιλέξτε Προϊόν για Δανεισμό", options=list(prod_options.keys()), key="l_prod")
                 chosen_p = prod_options[selected_prod_label]
@@ -682,13 +695,21 @@ if st.session_state.user_role == "admin":
                 for idx, r in enumerate(l_records):
                     status = str(r.get("status", r.get("Status", ""))).strip()
                     if status == "Ενεργός Δανεισμός":
-                        active_loans.append({"row_index": idx + 2, "data": r})
+                        p_name = str(r.get("product_name", r.get("Product Name", ""))).strip()
+                        borrower = str(r.get("borrower_name", r.get("Borrower", ""))).strip()
+                        l_id = str(r.get("loan_id", r.get("ID", ""))).strip()
+                        active_loans.append({
+                            "label": f"Δανεισμός ID: {l_id} | Προϊόν: {p_name} | Δανειζόμενος: {borrower}",
+                            "row_index": idx + 2,
+                            "data": r
+                        })
 
-                if not active_loans:
+                active_loans = sorted(active_loans, key=lambda x: x["label"])
+                active_options = {item["label"]: item for item in active_loans}
+
+                if not active_options:
                     st.info("Δεν υπάρχουν ενεργοί δανεισμοί αυτή τη στιγμή.")
                 else:
-                    active_options = {f"Δανεισμός ID: {l['data'].get('loan_id', l['data'].get('ID',''))} | Προϊόν: {l['data'].get('product_name', l['data'].get('Product Name',''))} | Ποιος: {l['data'].get('borrower_name', l['data'].get('Borrower',''))}": l for l in active_loans}
-
                     selected_active_label = st.selectbox("Επιλέξτε Δανεισμό προς Επιστροφή", options=list(active_options.keys()), key="ret_sel")
                     chosen_loan = active_options[selected_active_label]
                     
@@ -722,21 +743,37 @@ if st.session_state.user_role == "admin":
             for idx, r in enumerate(l_records):
                 status = str(r.get("status", r.get("Status", ""))).strip()
                 if status == "Ενεργός Δανεισμός":
-                    active_loans_edit.append({"row_index": idx + 2, "data": r})
+                    p_name = str(r.get("product_name", r.get("Product Name", ""))).strip()
+                    borrower = str(r.get("borrower_name", r.get("Borrower", ""))).strip()
+                    l_id = str(r.get("loan_id", r.get("ID", ""))).strip()
+                    active_loans_edit.append({
+                        "label": f"Δανεισμός ID: {l_id} | Προϊόν: {p_name} | Δανειζόμενος: {borrower}",
+                        "row_index": idx + 2,
+                        "data": r
+                    })
 
             if not active_loans_edit:
                 st.info("Δεν υπάρχουν ενεργοί δανεισμοί προς τροποποίηση.")
             else:
-                edit_loan_options = {f"Δανεισμός ID: {l['data'].get('loan_id', l['data'].get('ID',''))} | Προϊόν: {l['data'].get('product_name', l['data'].get('Product Name',''))} | Ποιος: {l['data'].get('borrower_name', l['data'].get('Borrower',''))}": l for l in active_loans_edit}
+                active_loans_edit = sorted(active_loans_edit, key=lambda x: x["label"])
+                edit_loan_options = {item["label"]: item for item in active_loans_edit}
 
                 selected_edit_loan_label = st.selectbox("Επιλέξτε Δανεισμό προς Τροποποίηση", options=list(edit_loan_options.keys()), key="edit_loan_sel")
                 chosen_edit_loan = edit_loan_options[selected_edit_loan_label]
                 loan_row_data = chosen_edit_loan["data"]
                 loan_row_idx = chosen_edit_loan["row_index"]
 
-                # Λίστα διαθέσιμων ονομάτων προϊόντων αποθήκης
-                product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
-                product_names = sorted(list(set(product_names)))
+                # Λίστα ταξινομημένων προϊόντων αποθήκης με κατηγορία [Κατηγορία] - Όνομα
+                formatted_products_edit = []
+                for p in product_records:
+                    p_comp = str(p.get("product_company", p.get("Company", ""))).strip()
+                    p_name = str(p.get("product_name", p.get("Name", ""))).strip()
+                    label = f"[{p_comp}] {p_name}"
+                    formatted_products_edit.append({"label": label, "name": p_name})
+
+                formatted_products_edit = sorted(formatted_products_edit, key=lambda x: x["label"])
+                product_names_sorted = [item["name"] for item in formatted_products_edit]
+                product_labels_sorted = [item["label"] for item in formatted_products_edit]
 
                 curr_prod = str(loan_row_data.get("product_name", loan_row_data.get("Product Name", ""))).strip()
                 curr_borrower = str(loan_row_data.get("borrower_name", loan_row_data.get("Borrower", "")))
@@ -745,7 +782,13 @@ if st.session_state.user_role == "admin":
                 except:
                     curr_lqty = 1
 
-                edit_prod_name = st.selectbox("Διόρθωση Είδους Προϊόντος", options=product_names, index=(product_names.index(curr_prod) + 1 if curr_prod in product_names else 0) - 1 if curr_prod in product_names else 0, key=f"edit_pname_{loan_row_idx}")
+                default_idx = 0
+                if curr_prod in product_names_sorted:
+                    default_idx = product_names_sorted.index(curr_prod)
+
+                selected_edit_label = st.selectbox("Διόρθωση Είδους Προϊόντος", options=product_labels_sorted, index=default_idx, key=f"edit_plabel_{loan_row_idx}")
+                edit_prod_name = product_names_sorted[product_labels_sorted.index(selected_edit_label)]
+
                 edit_borrower_name = st.text_input("Διόρθωση Ονόματος Δανειζόμενου", value=curr_borrower, key=f"edit_bname_{loan_row_idx}")
                 edit_loan_qty = st.number_input("Διόρθωση Ποσότητας Δανεισμού", min_value=1, value=curr_lqty, step=1, key=f"edit_lqty_{loan_row_idx}")
 
@@ -753,14 +796,13 @@ if st.session_state.user_role == "admin":
 
                 if update_loan_btn:
                     try:
-                        # Στήλη 2: product_name, Στήλη 3: borrower_name, Στήλη 5: quantity_borrowed
                         l_sheet.update_cell(loan_row_idx, 2, edit_prod_name)
                         l_sheet.update_cell(loan_row_idx, 3, edit_borrower_name.strip())
                         l_sheet.update_cell(loan_row_idx, 5, edit_loan_qty)
                         st.success("Ο δανεισμός ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                     except Exception as e:
                         st.error(f"Σφάλμα ενημέρωσης δανεισμού: {e}")
-                
+                        
     # ------------------------------------------
     # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
     # ------------------------------------------
@@ -777,35 +819,49 @@ if st.session_state.user_role == "admin":
         if not product_records:
             st.warning("Δεν βρέθηκαν προϊόντα στην αποθήκη.")
         else:
-            product_names = [str(r.get("product_name", r.get("Name", ""))).strip() for r in product_records if str(r.get("product_name", r.get("Name", ""))).strip()]
-            product_names = sorted(list(set(product_names)))
+            formatted_products = []
+            for r in product_records:
+                p_comp = str(r.get("product_company", r.get("Company", ""))).strip()
+                p_name = str(r.get("product_name", r.get("Name", ""))).strip()
+                label = f"[{p_comp}] {p_name}"
+                formatted_products.append({"label": label, "name": p_name})
+
+            formatted_products = sorted(formatted_products, key=lambda x: x["label"])
+            product_names_sorted = [item["name"] for item in formatted_products]
+            product_labels_sorted = [""] + [item["label"] for item in formatted_products]
 
             operator_name = st.text_input("Όνομα Χειριστή", key="b_op")
             robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)", key="b_rname")
 
-            board = st.selectbox("Πλακέτα", options=[""] + product_names, key="b_board")
+            board_label = st.selectbox("Πλακέτα", options=product_labels_sorted, key="b_board")
+            board = product_names_sorted[product_labels_sorted.index(board_label) - 1] if board_label else ""
             
             col_s1, col_s2, col_s3, col_s4 = st.columns(4)
             with col_s1:
-                sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, key="b_s1")
+                s1_label = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=product_labels_sorted, key="b_s1")
+                sensor1 = product_names_sorted[product_labels_sorted.index(s1_label) - 1] if s1_label else ""
             with col_s2:
                 sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, step=1, value=1, key="b_s1_q")
             with col_s3:
-                sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, key="b_s2")
+                s2_label = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=product_labels_sorted, key="b_s2")
+                sensor2 = product_names_sorted[product_labels_sorted.index(s2_label) - 1] if s2_label else ""
             with col_s4:
                 sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, step=1, key="b_s2_q")
 
-            battery = st.selectbox("Μπαταρία", options=[""] + product_names, key="b_batt")
+            batt_label = st.selectbox("Μπαταρία", options=product_labels_sorted, key="b_batt")
+            battery = product_names_sorted[product_labels_sorted.index(batt_label) - 1] if batt_label else ""
             
             col_m1, col_m2 = st.columns(2)
             with col_m1:
-                motors = st.selectbox("Κινητήρες", options=[""] + product_names, key="b_mot")
+                mot_label = st.selectbox("Κινητήρες", options=product_labels_sorted, key="b_mot")
+                motors = product_names_sorted[product_labels_sorted.index(mot_label) - 1] if mot_label else ""
             with col_m2:
                 motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, step=1, key="b_mot_q")
 
             col_w1, col_w2 = st.columns(2)
             with col_w1:
-                wheels = st.selectbox("Ρόδες", options=[""] + product_names, key="b_wh")
+                wh_label = st.selectbox("Ρόδες", options=product_labels_sorted, key="b_wh")
+                wheels = product_names_sorted[product_labels_sorted.index(wh_label) - 1] if wh_label else ""
             with col_w2:
                 wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, step=1, key="b_wh_q")
 
@@ -814,15 +870,16 @@ if st.session_state.user_role == "admin":
             st.markdown("---")
             st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
             
-            selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_names, key="build_extras_multi")
+            selected_extra_labels = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_labels_sorted[1:], key="build_extras_multi")
             
             extra_qtys = {}
-            if selected_extras:
+            if selected_extra_labels:
                 st.markdown("**Ορίστε τεμάχια για καθένα από τα επιλεγμένα extra υλικά:**")
                 cols_ex = st.columns(2)
-                for idx, ex in enumerate(selected_extras):
+                for idx, ex_label in enumerate(selected_extra_labels):
+                    ex_name = product_names_sorted[product_labels_sorted.index(ex_label) - 1]
                     with cols_ex[idx % 2]:
-                        extra_qtys[ex] = st.number_input(f"Τεμάχια για «{ex}»", min_value=1, step=1, value=1, key=f"build_ex_qty_{ex}")
+                        extra_qtys[ex_name] = st.number_input(f"Τεμάχια για «{ex_label}»", min_value=1, step=1, value=1, key=f"build_ex_qty_{ex_name}")
             
             st.markdown("<br>", unsafe_allow_html=True)
             build_submit = st.button("Οριστική Κατασκευή Ρομπότ", type="primary", use_container_width=True)
@@ -834,7 +891,7 @@ if st.session_state.user_role == "admin":
                         r_records = r_sheet.get_all_records()
                         next_robot_id = len(r_records) + 1 if r_records else 1
 
-                        extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in selected_extras])
+                        extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in extra_qtys])
 
                         r_sheet.append_row([
                             next_robot_id,
@@ -896,8 +953,21 @@ if st.session_state.user_role == "admin":
                 r_data = chosen_robot["data"]
                 r_idx = chosen_robot["row_index"]
 
-                product_names = [str(p.get("product_name", p.get("Name", ""))).strip() for p in product_records if str(p.get("product_name", p.get("Name", ""))).strip()]
-                product_names = sorted(list(set(product_names)))
+                formatted_products = []
+                for p in product_records:
+                    p_comp = str(p.get("product_company", p.get("Company", ""))).strip()
+                    p_name = str(p.get("product_name", p.get("Name", ""))).strip()
+                    label = f"[{p_comp}] {p_name}"
+                    formatted_products.append({"label": label, "name": p_name})
+
+                formatted_products = sorted(formatted_products, key=lambda x: x["label"])
+                product_names_sorted = [item["name"] for item in formatted_products]
+                product_labels_sorted = [""] + [item["label"] for item in formatted_products]
+
+                def get_index(val):
+                    if val in product_names_sorted:
+                        return product_names_sorted.index(val) + 1
+                    return 0
 
                 existing_extras = {}
                 curr_extra_str = str(r_data.get("extra_parts", "")).strip()
@@ -914,7 +984,8 @@ if st.session_state.user_role == "admin":
                 edit_robot_name = st.text_input("Νέο Όνομα Ρομπότ", value=str(r_data.get("robot_name", r_data.get("Robot Name", ""))), key=f"ed_rn_{r_idx}")
 
                 curr_board = str(r_data.get("board", ""))
-                edit_board = st.selectbox("Πλακέτα", options=[""] + product_names, index=(product_names.index(curr_board) + 1) if curr_board in product_names else 0, key=f"ed_bd_{r_idx}")
+                edit_board_label = st.selectbox("Πλακέτα", options=product_labels_sorted, index=get_index(curr_board), key=f"ed_bd_{r_idx}")
+                edit_board = product_names_sorted[product_labels_sorted.index(edit_board_label) - 1] if edit_board_label else ""
 
                 curr_s1 = str(r_data.get("sensor1", ""))
                 try:
@@ -930,16 +1001,19 @@ if st.session_state.user_role == "admin":
 
                 col_s1, col_s2, col_s3, col_s4 = st.columns(4)
                 with col_s1:
-                    edit_sensor1 = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=[""] + product_names, index=(product_names.index(curr_s1) + 1) if curr_s1 in product_names else 0, key=f"ed_s1_{r_idx}")
+                    edit_s1_label = st.selectbox("Τύπος Αισθητήρων (Είδος 1)", options=product_labels_sorted, index=get_index(curr_s1), key=f"ed_s1_{r_idx}")
+                    edit_sensor1 = product_names_sorted[product_labels_sorted.index(edit_s1_label) - 1] if edit_s1_label else ""
                 with col_s2:
                     edit_sensor1_qty = st.number_input("Ποσότητα Είδους 1", min_value=0, value=curr_s1_qty, step=1, key=f"ed_s1q_{r_idx}")
                 with col_s3:
-                    edit_sensor2 = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=[""] + product_names, index=(product_names.index(curr_s2) + 1) if curr_s2 in product_names else 0, key=f"ed_s2_{r_idx}")
+                    edit_s2_label = st.selectbox("Τύπος Αισθητήρων (Είδος 2)", options=product_labels_sorted, index=get_index(curr_s2), key=f"ed_s2_{r_idx}")
+                    edit_sensor2 = product_names_sorted[product_labels_sorted.index(edit_s2_label) - 1] if edit_s2_label else ""
                 with col_s4:
                     edit_sensor2_qty = st.number_input("Ποσότητα Είδους 2", min_value=0, value=curr_s2_qty, step=1, key=f"ed_s2q_{r_idx}")
 
                 curr_batt = str(r_data.get("battery", ""))
-                edit_battery = st.selectbox("Μπαταρία", options=[""] + product_names, index=(product_names.index(curr_batt) + 1) if curr_batt in product_names else 0, key=f"ed_bt_{r_idx}")
+                edit_batt_label = st.selectbox("Μπαταρία", options=product_labels_sorted, index=get_index(curr_batt), key=f"ed_bt_{r_idx}")
+                edit_battery = product_names_sorted[product_labels_sorted.index(edit_batt_label) - 1] if edit_batt_label else ""
 
                 curr_motors = str(r_data.get("motors", ""))
                 try:
@@ -949,7 +1023,8 @@ if st.session_state.user_role == "admin":
 
                 col_m1, col_m2 = st.columns(2)
                 with col_m1:
-                    edit_motors = st.selectbox("Κινητήρες", options=[""] + product_names, index=(product_names.index(curr_motors) + 1) if curr_motors in product_names else 0, key=f"ed_mot_{r_idx}")
+                    edit_mot_label = st.selectbox("Κινητήρες", options=product_labels_sorted, index=get_index(curr_motors), key=f"ed_mot_{r_idx}")
+                    edit_motors = product_names_sorted[product_labels_sorted.index(edit_mot_label) - 1] if edit_mot_label else ""
                 with col_m2:
                     edit_motors_qty = st.number_input("Ποσότητα Κινητήρων", min_value=0, value=curr_mqty, step=1, key=f"ed_motq_{r_idx}")
 
@@ -961,7 +1036,8 @@ if st.session_state.user_role == "admin":
 
                 col_w1, col_w2 = st.columns(2)
                 with col_w1:
-                    edit_wheels = st.selectbox("Ρόδες", options=[""] + product_names, index=(product_names.index(curr_wheels) + 1) if curr_wheels in product_names else 0, key=f"ed_wh_{r_idx}")
+                    edit_wh_label = st.selectbox("Ρόδες", options=product_labels_sorted, index=get_index(curr_wheels), key=f"ed_wh_{r_idx}")
+                    edit_wheels = product_names_sorted[product_labels_sorted.index(edit_wh_label) - 1] if edit_wh_label else ""
                 with col_w2:
                     edit_wheels_qty = st.number_input("Ποσότητα Ρόδων", min_value=0, value=curr_wqty, step=1, key=f"ed_whq_{r_idx}")
 
@@ -970,17 +1046,24 @@ if st.session_state.user_role == "admin":
 
                 st.markdown("---")
                 st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
-                default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
-                edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_names, default=default_selected_extras, key=f"edit_extras_multi_{r_idx}")
+                
+                default_selected_labels = []
+                for k in existing_extras.keys():
+                    match_item = next((item for item in formatted_products if item["name"] == k), None)
+                    if match_item:
+                        default_selected_labels.append(match_item["label"])
+
+                edit_selected_labels = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_labels_sorted[1:], default=default_selected_labels, key=f"edit_extras_multi_{r_idx}")
                 
                 edit_extra_qtys = {}
-                if edit_selected_extras:
+                if edit_selected_labels:
                     st.markdown("**Ορίστε τεμάχια για καθένα από τα επιλεγμένα extra υλικά:**")
                     cols_ed_ex = st.columns(2)
-                    for idx, ex in enumerate(edit_selected_extras):
-                        default_val = existing_extras.get(ex, 1)
+                    for idx, ex_label in enumerate(edit_selected_labels):
+                        ex_name = product_names_sorted[product_labels_sorted.index(ex_label) - 1]
+                        default_val = existing_extras.get(ex_name, 1)
                         with cols_ed_ex[idx % 2]:
-                            edit_extra_qtys[ex] = st.number_input(f"Τεμάχια για «{ex}»", min_value=1, step=1, value=default_val, key=f"edit_ex_qty_{r_idx}_{ex}")
+                            edit_extra_qtys[ex_name] = st.number_input(f"Τεμάχια για «{ex_label}»", min_value=1, step=1, value=default_val, key=f"edit_ex_qty_{r_idx}_{ex_name}")
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 edit_submit = st.button("Οριστική Ενημέρωση Ρομπότ", type="primary", use_container_width=True)
@@ -990,7 +1073,7 @@ if st.session_state.user_role == "admin":
                         r_sheet = get_robots_sheet()
                         row_idx = chosen_robot["row_index"]
 
-                        edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_selected_extras])
+                        edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_extra_qtys])
 
                         r_sheet.update_cell(row_idx, 2, edit_operator.strip())
                         r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
