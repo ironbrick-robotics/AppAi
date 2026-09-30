@@ -742,19 +742,24 @@ if st.session_state.user_role == "admin":
                     formatted_products_edit.append({"label": label, "name": p_name})
 
                 formatted_products_edit = sorted(formatted_products_edit, key=lambda x: x["label"])
-                product_names_sorted = [item["name"] for item in formatted_products_edit]
+                
+                # Δημιουργία λίστας labels και αντιστοίχιση με τα ονόματα των προϊόντων
                 product_labels_sorted = [item["label"] for item in formatted_products_edit]
+                product_names_sorted = [item["name"] for item in formatted_products_edit]
 
                 curr_prod = str(loan_row_data.get("product_name", loan_row_data.get("Product Name", ""))).strip()
                 curr_borrower = str(loan_row_data.get("borrower_name", loan_row_data.get("Borrower", "")))
                 try: curr_lqty = int(loan_row_data.get("quantity_borrowed", loan_row_data.get("Quantity", 1)))
                 except: curr_lqty = 1
 
-                default_idx = 0
-                if curr_prod in product_names_sorted:
-                    default_idx = product_names_sorted.index(curr_prod)
+                # Βρίσκουμε το σωστό label με βάση το curr_prod
+                default_label_idx = 0
+                for i, name_val in enumerate(product_names_sorted):
+                    if name_val == curr_prod:
+                        default_label_idx = i
+                        break
 
-                selected_edit_label = st.selectbox("Διόρθωση Είδους Προϊόντος", options=product_labels_sorted, index=default_idx, key=f"edit_plabel_{loan_row_idx}")
+                selected_edit_label = st.selectbox("Διόρθωση Είδους Προϊόντος", options=product_labels_sorted, index=default_label_idx, key=f"edit_plabel_{loan_row_idx}")
                 edit_prod_name = product_names_sorted[product_labels_sorted.index(selected_edit_label)]
 
                 edit_borrower_name = st.text_input("Διόρθωση Ονόματος Δανειζόμενου", value=curr_borrower, key=f"edit_bname_{loan_row_idx}")
@@ -773,7 +778,7 @@ if st.session_state.user_role == "admin":
                         st.error(f"Σφάλμα ενημέρωσης: {e}")
                         
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots με robot_type στη στήλη B)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -797,6 +802,7 @@ if st.session_state.user_role == "admin":
             product_names_sorted = [item["name"] for item in formatted_products]
             product_labels_sorted = [""] + [item["label"] for item in formatted_products]
 
+            robot_type = st.text_input("Είδος Ρομπότ (π.χ. Open Source, Kit κ.λπ.)", key="b_rtype")
             operator_name = st.text_input("Όνομα Χειριστή", key="b_op")
             robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)", key="b_rname")
 
@@ -852,7 +858,7 @@ if st.session_state.user_role == "admin":
             build_submit = st.button("Οριστική Κατασκευή Ρομπότ", type="primary", use_container_width=True)
 
             if build_submit:
-                if operator_name.strip() and robot_name.strip():
+                if robot_type.strip() and operator_name.strip() and robot_name.strip():
                     try:
                         r_sheet = get_robots_sheet()
                         r_records = get_robots_records()
@@ -860,8 +866,10 @@ if st.session_state.user_role == "admin":
 
                         extra_parts_str = ", ".join([f"{ex}:{extra_qtys[ex]}" for ex in extra_qtys])
 
+                        # Σειρά στηλών: robot_id, robot_type, operator_name, robot_name, board, sensor1, sensor1_qty, sensor2, sensor2_qty, battery, motors, motors_qty, wheels, wheels_qty, chassis, extra_parts, status
                         r_sheet.append_row([
                             next_robot_id,
+                            robot_type.strip(),
                             operator_name.strip(),
                             robot_name.strip(),
                             board,
@@ -882,7 +890,7 @@ if st.session_state.user_role == "admin":
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης: {e}")
                 else:
-                    st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
+                    st.warning("Συμπληρώστε το είδος, το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
@@ -940,6 +948,8 @@ if st.session_state.user_role == "admin":
                             try: existing_extras[pn.strip()] = int(pq.strip())
                             except: existing_extras[pn.strip()] = 1
 
+                curr_rtype = str(r_data.get("robot_type", r_data.get("Robot Type", ""))).strip()
+                edit_robot_type = st.text_input("Διόρθωση Είδους Ρομπότ", value=curr_rtype, key=f"ed_rtype_{r_idx}")
                 edit_operator = st.text_input("Νέο Όνομα Χειριστή", value=str(r_data.get("operator_name", r_data.get("Operator", ""))), key=f"ed_op_{r_idx}")
                 edit_robot_name = st.text_input("Νέο Όνομα Ρομπότ", value=str(r_data.get("robot_name", r_data.get("Robot Name", ""))), key=f"ed_rn_{r_idx}")
 
@@ -1027,27 +1037,28 @@ if st.session_state.user_role == "admin":
 
                         edit_extra_parts_str = ", ".join([f"{ex}:{edit_extra_qtys[ex]}" for ex in edit_extra_qtys])
 
-                        r_sheet.update_cell(row_idx, 2, edit_operator.strip())
-                        r_sheet.update_cell(row_idx, 3, edit_robot_name.strip())
-                        r_sheet.update_cell(row_idx, 4, edit_board)
-                        r_sheet.update_cell(row_idx, 5, edit_sensor1)
-                        r_sheet.update_cell(row_idx, 6, edit_sensor1_qty)
-                        r_sheet.update_cell(row_idx, 7, edit_sensor2)
-                        r_sheet.update_cell(row_idx, 8, edit_sensor2_qty)
-                        r_sheet.update_cell(row_idx, 9, edit_battery)
-                        r_sheet.update_cell(row_idx, 10, edit_motors)
-                        r_sheet.update_cell(row_idx, 11, edit_motors_qty)
-                        r_sheet.update_cell(row_idx, 12, edit_wheels)
-                        r_sheet.update_cell(row_idx, 13, edit_wheels_qty)
-                        r_sheet.update_cell(row_idx, 14, edit_chassis.strip())
-                        r_sheet.update_cell(row_idx, 15, edit_extra_parts_str)
+                        r_sheet.update_cell(row_idx, 2, edit_robot_type.strip())
+                        r_sheet.update_cell(row_idx, 3, edit_operator.strip())
+                        r_sheet.update_cell(row_idx, 4, edit_robot_name.strip())
+                        r_sheet.update_cell(row_idx, 5, edit_board)
+                        r_sheet.update_cell(row_idx, 6, edit_sensor1)
+                        r_sheet.update_cell(row_idx, 7, edit_sensor1_qty)
+                        r_sheet.update_cell(row_idx, 8, edit_sensor2)
+                        r_sheet.update_cell(row_idx, 9, edit_sensor2_qty)
+                        r_sheet.update_cell(row_idx, 10, edit_battery)
+                        r_sheet.update_cell(row_idx, 11, edit_motors)
+                        r_sheet.update_cell(row_idx, 12, edit_motors_qty)
+                        r_sheet.update_cell(row_idx, 13, edit_wheels)
+                        r_sheet.update_cell(row_idx, 14, edit_wheels_qty)
+                        r_sheet.update_cell(row_idx, 15, edit_chassis.strip())
+                        r_sheet.update_cell(row_idx, 16, edit_extra_parts_str)
 
                         st.success("Το ρομπότ ενημερώθηκε επιτυχώς!")
                     except Exception as e:
                         st.error(f"Σφάλμα ενημέρωσης: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ
+    # ΣΕΛΙΔΑ L: ΛΙΣΤΑ ΡΟΜΠΟΤ (Εμφάνιση Είδος Ρομπότ)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_list":
         st.subheader("📋 Λίστα Κατασκευασμένων Ρομπότ")
@@ -1057,6 +1068,7 @@ if st.session_state.user_role == "admin":
             robot_list_data = []
             for r in r_records:
                 r_id = str(r.get("robot_id", r.get("ID", ""))).strip()
+                r_type = str(r.get("robot_type", r.get("Robot Type", ""))).strip()
                 op_name = str(r.get("operator_name", r.get("Operator", ""))).strip()
                 r_name = str(r.get("robot_name", r.get("Robot Name", ""))).strip()
                 board = str(r.get("board", r.get("Board", ""))).strip()
@@ -1081,6 +1093,7 @@ if st.session_state.user_role == "admin":
 
                 robot_list_data.append({
                     "ID": r_id,
+                    "ΕΙΔΟΣ ΡΟΜΠΟΤ": r_type,
                     "ΧΕΙΡΙΣΤΗΣ": op_name,
                     "ΟΝΟΜΑ ΡΟΜΠΟΤ": r_name,
                     "ΠΛΑΚΕΤΑ": board,
