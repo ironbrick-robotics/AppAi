@@ -802,7 +802,7 @@ if st.session_state.user_role == "admin":
             product_names_sorted = [item["name"] for item in formatted_products]
             product_labels_sorted = [""] + [item["label"] for item in formatted_products]
 
-            robot_type = st.text_input("Είδος Ρομπότ (π.χ. Open Source, Kit κ.λπ.)", key="b_rtype")
+            robot_type = st.text_input("Είδος Ρομπότ", key="b_rtype")
             operator_name = st.text_input("Όνομα Χειριστή", key="b_op")
             robot_name = st.text_input("Όνομα Ρομπότ (π.χ. KAGE)", key="b_rname")
 
