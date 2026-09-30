@@ -622,7 +622,7 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "loans":
         st.subheader("🤝 Δανεισμός & Επιστροφή Εξοπλισμού")
 
-        tab_borrow, tab_return = st.tabs(["📝 Καταγραφή Νέου Δανεισμού", "↩️ Επιστροφή / Ενεργοί Δανεισμοί"])
+        tab_borrow, tab_return, tab_edit_loan = st.tabs(["📝 Καταγραφή Νέου Δανεισμού", "↩️ Επιστροφή / Ενεργοί Δανεισμοί", "✏️ Τροποποίηση Δανεισμού"])
 
         with tab_borrow:
             product_records = []
@@ -637,41 +637,40 @@ if st.session_state.user_role == "admin":
             else:
                 prod_options = {f"ID: {r.get('product_id', r.get('id', ''))} - {r.get('product_name', r.get('Name', ''))} (Κατηγορία: {r.get('product_company', r.get('Company', ''))})": r for r in product_records}
 
-                with st.form("loan_form"):
-                    selected_prod_label = st.selectbox("Επιλέξτε Προϊόν για Δανεισμό", options=list(prod_options.keys()))
-                    chosen_p = prod_options[selected_prod_label]
-                    
-                    borrower_name = st.text_input("Όνομα Δανειζόμενου (Μέλους Ομάδας)")
-                    quantity_borrowed = st.number_input("Ποσότητα Δανεισμού", min_value=1, step=1)
-                    
-                    loan_submit = st.form_submit_button("Καταχώριση Δανεισμού")
+                selected_prod_label = st.selectbox("Επιλέξτε Προϊόν για Δανεισμό", options=list(prod_options.keys()), key="l_prod")
+                chosen_p = prod_options[selected_prod_label]
+                
+                borrower_name = st.text_input("Όνομα Δανειζόμενου (Μέλους Ομάδας)", key="l_borrower")
+                quantity_borrowed = st.number_input("Ποσότητα Δανεισμού", min_value=1, step=1, key="l_qty")
+                
+                loan_submit = st.button("Καταχώριση Δανεισμού", type="primary", use_container_width=True, key="l_sub")
 
-                    if loan_submit:
-                        if borrower_name.strip() and quantity_borrowed > 0:
-                            try:
-                                l_sheet = get_loans_sheet()
-                                l_records = l_sheet.get_all_records()
-                                next_loan_id = len(l_records) + 1 if l_records else 1
-                                
-                                prod_name_val = str(chosen_p.get("product_name", chosen_p.get("Name", ""))).strip()
-                                loan_date_val = str(datetime.date.today())
-                                status_val = "Ενεργός Δανεισμός"
-                                return_date_val = "-"
+                if loan_submit:
+                    if borrower_name.strip() and quantity_borrowed > 0:
+                        try:
+                            l_sheet = get_loans_sheet()
+                            l_records = l_sheet.get_all_records()
+                            next_loan_id = len(l_records) + 1 if l_records else 1
+                            
+                            prod_name_val = str(chosen_p.get("product_name", chosen_p.get("Name", ""))).strip()
+                            loan_date_val = str(datetime.date.today())
+                            status_val = "Ενεργός Δανεισμός"
+                            return_date_val = "-"
 
-                                l_sheet.append_row([
-                                    next_loan_id,
-                                    prod_name_val,
-                                    borrower_name.strip(),
-                                    loan_date_val,
-                                    quantity_borrowed,
-                                    status_val,
-                                    return_date_val
-                                ])
-                                st.success(f"Ο δανεισμός καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
-                            except Exception as e:
-                                st.error(f"Σφάλμα καταγραφής δανεισμού: {e}")
-                        else:
-                            st.warning("Συμπληρώστε το όνομα του δανειζόμενου και έγκυρη ποσότητα.")
+                            l_sheet.append_row([
+                                next_loan_id,
+                                prod_name_val,
+                                borrower_name.strip(),
+                                loan_date_val,
+                                quantity_borrowed,
+                                status_val,
+                                return_date_val
+                            ])
+                            st.success("Ο δανεισμός καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα καταγραφής δανεισμού: {e}")
+                    else:
+                        st.warning("Συμπληρώστε το όνομα του δανειζόμενου και έγκυρη ποσότητα.")
 
         with tab_return:
             st.write("Ενεργοί Δανεισμοί που εκκρεμούν προς επιστροφή:")
@@ -690,24 +689,67 @@ if st.session_state.user_role == "admin":
                 else:
                     active_options = {f"Δανεισμός ID: {l['data'].get('loan_id', l['data'].get('ID',''))} | Προϊόν: {l['data'].get('product_name', l['data'].get('Product Name',''))} | Ποιος: {l['data'].get('borrower_name', l['data'].get('Borrower',''))}": l for l in active_loans}
 
-                    with st.form("return_form"):
-                        selected_active_label = st.selectbox("Επιλέξτε Δανεισμό προς Επιστροφή", options=list(active_options.keys()))
-                        chosen_loan = active_options[selected_active_label]
-                        
-                        return_submit = st.form_submit_button("Καταχώριση Επιστροφής")
+                    selected_active_label = st.selectbox("Επιλέξτε Δανεισμό προς Επιστροφή", options=list(active_options.keys()), key="ret_sel")
+                    chosen_loan = active_options[selected_active_label]
+                    
+                    return_submit = st.button("Καταχώριση Επιστροφής", type="primary", use_container_width=True, key="ret_sub")
 
-                        if return_submit:
-                            try:
-                                row_to_up = chosen_loan["row_index"]
-                                today_str = str(datetime.date.today())
-                                l_sheet.update_cell(row_to_up, 6, "Επιστράφηκε")
-                                l_sheet.update_cell(row_to_up, 7, today_str)
-                                st.success(f"Η επιστροφή καταχωρήθηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
-                            except Exception as e:
-                                st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
+                    if return_submit:
+                        try:
+                            row_to_up = chosen_loan["row_index"]
+                            today_str = str(datetime.date.today())
+                            l_sheet.update_cell(row_to_up, 6, "Επιστράφηκε")
+                            l_sheet.update_cell(row_to_up, 7, today_str)
+                            st.success("Η επιστροφή καταχωρήθηκε! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
             except Exception as e:
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
+        with tab_edit_loan:
+            st.write("Διόρθωση στοιχείων ενεργού δανεισμού (π.χ. λάθος ποσότητα ή όνομα):")
+            try:
+                l_sheet = get_loans_sheet()
+                l_records = l_sheet.get_all_records()
+                
+                active_loans_edit = []
+                for idx, r in enumerate(l_records):
+                    status = str(r.get("status", r.get("Status", ""))).strip()
+                    if status == "Ενεργός Δανεισμός":
+                        active_loans_edit.append({"row_index": idx + 2, "data": r})
+
+                if not active_loans_edit:
+                    st.info("Δεν υπάρχουν ενεργοί δανεισμοί προς τροποποίηση.")
+                else:
+                    edit_loan_options = {f"Δανεισμός ID: {l['data'].get('loan_id', l['data'].get('ID',''))} | Προϊόν: {l['data'].get('product_name', l['data'].get('Product Name',''))} | Ποιος: {l['data'].get('borrower_name', l['data'].get('Borrower',''))}": l for l in active_loans_edit}
+
+                    selected_edit_loan_label = st.selectbox("Επιλέξτε Δανεισμό προς Τροποποίηση", options=list(edit_loan_options.keys()), key="edit_loan_sel")
+                    chosen_edit_loan = edit_loan_options[selected_edit_loan_label]
+                    loan_row_data = chosen_edit_loan["data"]
+                    loan_row_idx = chosen_edit_loan["row_index"]
+
+                    curr_borrower = str(loan_row_data.get("borrower_name", loan_row_data.get("Borrower", "")))
+                    try:
+                        curr_lqty = int(loan_row_data.get("quantity_borrowed", loan_row_data.get("Quantity", 1)))
+                    except:
+                        curr_lqty = 1
+
+                    edit_borrower_name = st.text_input("Διόρθωση Ονόματος Δανειζόμενου", value=curr_borrower, key=f"edit_bname_{loan_row_idx}")
+                    edit_loan_qty = st.number_input("Διόρθωση Ποσότητας Δανεισμού", min_value=1, value=curr_lqty, step=1, key=f"edit_lqty_{loan_row_idx}")
+
+                    update_loan_btn = st.button("Οριστική Ενημέρωση Δανεισμού", type="primary", use_container_width=True, key=f"edit_lsub_{loan_row_idx}")
+
+                    if update_loan_btn:
+                        try:
+                            # Στήλη 3: borrower_name, Στήλη 5: quantity_borrowed
+                            l_sheet.update_cell(loan_row_idx, 3, edit_borrower_name.strip())
+                            l_sheet.update_cell(loan_row_idx, 5, edit_loan_qty)
+                            st.success("Ο δανεισμός ενημερώθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης δανεισμού: {e}")
+            except Exception as e:
+                st.error(f"Σφάλμα φόρτωσης δεδομένων δανεισμών: {e}")
+                
     # ------------------------------------------
     # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
     # ------------------------------------------
