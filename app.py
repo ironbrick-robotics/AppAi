@@ -431,7 +431,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ Δ: ΕΠΕΞΕΡΓΑΣΙΑ ΥΠΑΡΧΟΝΤΟΣ ΠΡΟΪΟΝΤΟΣ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "edit":
-        st.subheader("✏️ Φόρμα Επεξεργασίας Προϊόντος")
+        st.subheader("✏️️ Φόρμα Επεξεργασίας Προϊόντος")
         
         company_options = []
         product_records = []
@@ -504,11 +504,13 @@ if st.session_state.user_role == "admin":
                             st.warning("Το όνομα προϊόντος είναι υποχρεωτικό.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken)
+    # ΣΕΛΙΔΑ Ε: ΔΙΑΧΕΙΡΙΣΗ ΚΑΤΕΣΤΡΑΜΜΕΝΩΝ (db_broken με Νέα Καταχώριση & Τροποποίηση)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "broken":
         st.subheader("⚠️ Διαχείριση Κατεστραμμένων Προϊόντων")
         
+        tab_broken_add, tab_broken_edit = st.tabs(["➕ Νέα Καταχώριση Κατεστραμμένων", "✏️ Τροποποίηση / Διόρθωση Κατεστραμμένων"])
+
         company_options = []
         product_records = []
         try:
@@ -524,54 +526,95 @@ if st.session_state.user_role == "admin":
         except Exception as e:
             st.error(f"Σφάλμα φόρτωσης δεδομένων: {e}")
 
-        if not company_options or not product_records:
-            st.warning("Δεν βρέθηκαν καταχωρημένες κατηγορίες ή προϊόντα.")
-        else:
-            selected_b_company = st.selectbox("Επιλέξτε Κατηγορία", options=company_options, key="b_comp")
-            
-            filtered_products = []
-            for r in product_records:
-                comp = str(r.get("product_company", r.get("Company", ""))).strip()
-                if comp == selected_b_company:
-                    p_id = str(r.get("product_id", r.get("Product ID", r.get("id", "")))).strip()
-                    p_sub = str(r.get("product_subcategory", r.get("Subcategory", ""))).strip()
-                    p_name = str(r.get("product_name", r.get("Name", ""))).strip()
-                    try:
-                        p_qty = int(r.get("product_quantity", r.get("Quantity", 0)))
-                    except:
-                        p_qty = 0
-                    filtered_products.append({"id": p_id, "subcategory": p_sub, "name": p_name, "quantity": p_qty})
-
-            product_display_options = {f"ID: {p['id']} - {p['name']} (Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
-
-            if not product_display_options:
-                st.info(f"Δεν υπάρχουν προϊόντα για την κατηγορία '{selected_b_company}'.")
+        with tab_broken_add:
+            if not company_options or not product_records:
+                st.warning("Δεν βρέθηκαν καταχωρημένες κατηγορίες ή προϊόντα.")
             else:
-                selected_b_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()), key="b_prod")
-                chosen_b_prod = product_display_options[selected_b_prod_label]
+                selected_b_company = st.selectbox("Επιλέξτε Κατηγορία", options=company_options, key="b_comp")
+                
+                filtered_products = []
+                for r in product_records:
+                    comp = str(r.get("product_company", r.get("Company", ""))).strip()
+                    if comp == selected_b_company:
+                        p_id = str(r.get("product_id", r.get("Product ID", r.get("id", "")))).strip()
+                        p_sub = str(r.get("product_subcategory", r.get("Subcategory", ""))).strip()
+                        p_name = str(r.get("product_name", r.get("Name", ""))).strip()
+                        try:
+                            p_qty = int(r.get("product_quantity", r.get("Quantity", 0)))
+                        except:
+                            p_qty = 0
+                        filtered_products.append({"id": p_id, "subcategory": p_sub, "name": p_name, "quantity": p_qty})
 
-                with st.form("broken_form"):
-                    broken_qty = st.number_input("Κατεστραμμένα Τεμάχια", min_value=0, max_value=chosen_b_prod["quantity"], step=1)
-                    submit_broken = st.form_submit_button("Καταχώριση Κατεστραμμένων")
-                    
-                    if submit_broken:
-                        if broken_qty > 0:
-                            try:
-                                operation_result = chosen_b_prod["quantity"] - broken_qty
-                                b_sheet = get_broken_sheet()
-                                b_sheet.append_row([
-                                    chosen_b_prod["id"],
-                                    selected_b_company,
-                                    chosen_b_prod["subcategory"],
-                                    chosen_b_prod["name"],
-                                    broken_qty,
-                                    operation_result
-                                ])
-                                st.success(f"Καταγράφηκαν {broken_qty} κατεστραμμένα τεμάχια. Υπόλοιπο λειτουργικά: {operation_result}. Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
-                            except Exception as e:
-                                st.error(f"Σφάλμα αποθήκευσης κατεστραμμένων: {e}")
-                        else:
-                            st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
+                product_display_options = {f"ID: {p['id']} - {p['name']} (Διαθέσιμα: {p['quantity']})": p for p in filtered_products}
+
+                if not product_display_options:
+                    st.info(f"Δεν υπάρχουν προϊόντα για την κατηγορία '{selected_b_company}'.")
+                else:
+                    selected_b_prod_label = st.selectbox("Επιλέξτε Προϊόν", options=list(product_display_options.keys()), key="b_prod")
+                    chosen_b_prod = product_display_options[selected_b_prod_label]
+
+                    with st.form("broken_form"):
+                        broken_qty = st.number_input("Κατεστραμμένα Τεμάχια", min_value=0, max_value=chosen_b_prod["quantity"], step=1)
+                        submit_broken = st.form_submit_button("Καταχώριση Κατεστραμμένων")
+                        
+                        if submit_broken:
+                            if broken_qty > 0:
+                                try:
+                                    operation_result = chosen_b_prod["quantity"] - broken_qty
+                                    b_sheet = get_broken_sheet()
+                                    b_sheet.append_row([
+                                        chosen_b_prod["id"],
+                                        selected_b_company,
+                                        chosen_b_prod["subcategory"],
+                                        chosen_b_prod["name"],
+                                        broken_qty,
+                                        operation_result
+                                    ])
+                                    st.success(f"Καταγράφηκαν {broken_qty} κατεστραμμένα τεμάχια. Υπόλοιπο λειτουργικά: {operation_result}. Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                                except Exception as e:
+                                    st.error(f"Σφάλμα αποθήκευσης κατεστραμμένων: {e}")
+                            else:
+                                st.warning("Παρακαλώ εισάγετε αριθμό μεγαλύτερο του 0.")
+
+        with tab_broken_edit:
+            try:
+                b_sheet = get_broken_sheet()
+                b_records = b_sheet.get_all_records()
+            except Exception as e:
+                b_records = []
+
+            if not b_records:
+                st.info("Δεν υπάρχουν καταχωρημένα κατεστραμμένα προϊόντα προς τροποποίηση.")
+            else:
+                broken_options = {}
+                for idx, br in enumerate(b_records):
+                    br_id = str(br.get("broken_id", br.get("ID", ""))).strip()
+                    br_name = str(br.get("broken_name", br.get("Name", ""))).strip()
+                    br_qty = br.get("broken_quantity", br.get("Quantity", 0))
+                    label = f"Γραμμή {idx+2} | ID: {br_id} - {br_name} (Κατεστραμμένα: {br_qty})"
+                    broken_options[label] = {"row_index": idx + 2, "data": br}
+
+                selected_br_label = st.selectbox("Επιλέξτε Καταχώριση Κατεστραμμένων προς Διόρθωση", options=list(broken_options.keys()))
+                chosen_br_item = broken_options[selected_br_label]
+                br_data = chosen_br_item["data"]
+
+                try:
+                    curr_br_qty = int(br_data.get("broken_quantity", br_data.get("Quantity", 0)))
+                except:
+                    curr_br_qty = 0
+
+                with st.form("broken_edit_form"):
+                    new_broken_qty = st.number_input("Διορθωμένα Κατεστραμμένα Τεμάχια", min_value=0, value=curr_br_qty, step=1)
+                    edit_broken_submit = st.form_submit_button("Οριστική Ενημέρωση Κατεστραμμένων")
+
+                    if edit_broken_submit:
+                        try:
+                            row_to_up = chosen_br_item["row_index"]
+                            # Ενημερώνουμε τη στήλη 5 (broken_quantity)
+                            b_sheet.update_cell(row_to_up, 5, new_broken_qty)
+                            st.success(f"Η εγγραφή κατεστραμμένων ενημερώθηκε σε {new_broken_qty} τεμάχια! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης κατεστραμμένων: {e}")
 
     # ------------------------------------------
     # ΣΕΛΙΔΑ Θ: ΔΑΝΕΙΣΜΟΣ ΕΞΟΠΛΙΣΜΟΥ (db_loans)
@@ -666,7 +709,7 @@ if st.session_state.user_role == "admin":
                 st.error(f"Σφάλμα φόρτωσης δανείων: {e}")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (ΔΥΝΑΜΙΚΗ ΦΟΡΜΑ ΧΩΡΙΣ ΚΛΕΙΔΩΜΑ st.form)
+    # ΣΕΛΙΔΑ J: ΚΑΤΑΣΚΕΥΗ ΡΟΜΠΟΤ (db_robots)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
@@ -718,7 +761,7 @@ if st.session_state.user_role == "admin":
             st.markdown("---")
             st.subheader("🔌 Open Source / Extra Υλικά (Καλώδια, Αντάπτορες, Drivers, Πυκνωτές, Αντιστάσεις, Buttons κ.λπ.)")
             
-            selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη (εμφανίζεται αμέσως πεδίο ποσότητας για το καθένα):", options=product_names, key="build_extras_multi")
+            selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_names, key="build_extras_multi")
             
             extra_qtys = {}
             if selected_extras:
@@ -765,7 +808,7 @@ if st.session_state.user_role == "admin":
                     st.warning("Συμπληρώστε το όνομα χειριστή και το όνομα του ρομπότ.")
 
     # ------------------------------------------
-    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ (ΔΥΝΑΜΙΚΗ ΦΟΡΜΑ ΧΩΡΙΣ st.form)
+    # ΣΕΛΙΔΑ K: ΕΠΕΞΕΡΓΑΣΙΑ / ΑΛΛΑΓΗ ΕΞΑΡΤΗΜΑΤΩΝ ΡΟΜΠΟΤ
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_edit":
         st.subheader("✏️ Επεξεργασία & Αλλαγή Εξαρτημάτων Ρομπότ")
@@ -875,7 +918,7 @@ if st.session_state.user_role == "admin":
                 st.markdown("---")
                 st.subheader("🔌 Open Source / Extra Υλικά (Επεξεργασία)")
                 default_selected_extras = [k for k in existing_extras.keys() if k in product_names]
-                edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη (εμφανίζεται αμέσως πεδίο ποσότητας για το καθένα):", options=product_names, default=default_selected_extras, key=f"edit_extras_multi_{r_idx}")
+                edit_selected_extras = st.multiselect("Επιλέξτε επιπλέον υλικά από την αποθήκη:", options=product_names, default=default_selected_extras, key=f"edit_extras_multi_{r_idx}")
                 
                 edit_extra_qtys = {}
                 if edit_selected_extras:
