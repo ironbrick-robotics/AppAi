@@ -1,19 +1,75 @@
-Επίπεδο 1 (L1): Γενικό Ερώτημα
-Περιγραφή: Όταν ο μαθητής ζητάει ολόκληρη την άσκηση ή ένα θέμα χωρίς καμία δική του λεπτομέρεια.
-Χαρακτηριστικά: Μία ή δύο λέξεις, ή απλή αντιγραφή του τίτλου της άσκησης.
-----------------------------------------------------------------------------------
-Επίπεδο 2 (L2): Απλή αλλά λειτουργική Περιγραφή
-Περιγραφή: Όταν ο μαθητής περιγράφει μια βασική ενέργεια ή ένα εξάρτημα, αλλά χωρίς παραμέτρους (χρόνο, τιμές, συνθήκες).
-Χαρακτηριστικά: Αναφορά σε μία μόνο δράση χωρίς λεπτομέρειες.
-----------------------------------------------------------------------------------
-Επίπεδο 3 (L3): Προσδιορισμός Παραμέτρων
-Περιγραφή: Όταν ο μαθητής ορίζει συγκεκριμένες τιμές, χρόνους ή ονόματα αντικειμένων μέσα στο αίτημά του.
-Χαρακτηριστικά: Χρήση αριθμών (π.χ. δευτερόλεπτα, επίπεδα φωτός) και συγκεκριμένων ονομασιών.
-----------------------------------------------------------------------------------
-Επίπεδο 4 (L4): Αλγοριθμική Λογική 
-Περιγραφή: Όταν ο μαθητής συνδυάζει αισθητήρες με ενέργειες ή περιγράφει μια ροή "Αν συμβεί αυτό, τότε κάνε εκείνο".
-Χαρακτηριστικά: Χρήση λογικών συνδέσμων ("αν", "όταν", "αλλιώς", "μετά").
-----------------------------------------------------------------------------------
-Επίπεδο 5 (L5): Διόρθωση, Ανάλυση, Μεταγνώση
-Περιγραφή: Όταν ο μαθητής κάνει ερωτήσεις για το "γιατί", αναλύει ένα σφάλμα, ζητά επεξήγηση συγκεκριμένης γραμμής ή κάνει υποθέσεις για το τι φταίει.
-Χαρακτηριστικά: Ερωτήσεις debugging, αναφορά σε συγκεκριμένα errors, ερωτήσεις για τη σύνταξη (κεφαλαία, εσοχές).
+COMPETITIVE ROBOTICS PROMPT CLASSIFICATION RUBRIC
+
+Classify each student interaction into exactly one level from L1 to L5.
+
+
+L1 — GENERAL / CONCEPTUAL
+
+The student asks a broad or general question without specifying technical parameters or algorithmic details.
+
+Examples:
+- Τι είναι το Mini Sumo;
+- Πώς λειτουργεί ένα line follower;
+- Τι κάνει ο αισθητήρας αντιπάλου;
+
+
+L2 — BASIC FUNCTIONAL REQUEST
+
+The student requests one basic robot action or function without providing detailed parameters or combining multiple conditions.
+
+Examples:
+- Θέλω το robot να κινηθεί μπροστά.
+- Κάνε το robot να ψάχνει τον αντίπαλο.
+- Πώς μπορώ να σταματήσω τα μοτέρ;
+
+
+L3 — PARAMETERIZED / TECHNICAL REQUEST
+
+The student provides specific parameters, values, speeds, times, sensor conditions or other technical constraints.
+
+Examples:
+- Θέλω τα μοτέρ να λειτουργούν στο 70%.
+- Αν η τιμή του αισθητήρα είναι μικρότερη από 300, να σταματά.
+- Θέλω να περιστρέφεται για 500 ms.
+
+
+L4 — ALGORITHMIC / MULTI-CONDITION LOGIC
+
+The student combines sensors, actions, conditions, states or strategy.
+
+Typical expressions include:
+- if
+- when
+- else
+- then
+- while
+- otherwise
+
+Examples:
+- Αν δει αντίπαλο να επιτεθεί, αλλιώς να περιστρέφεται.
+- Αν δει τη γραμμή να κάνει πίσω και μετά να συνεχίζει την αναζήτηση.
+- Όταν ο αριστερός αισθητήρας βλέπει γραμμή, διόρθωσε την πορεία.
+
+
+L5 — DEBUGGING / ANALYSIS / METACOGNITION
+
+The student asks for error correction, explanation, debugging, reasoning or evaluation of an existing solution.
+
+Examples:
+- Γιατί βγαίνει έξω από το dohyo;
+- Γιατί δεν βλέπει τον αντίπαλο;
+- Τι λάθος έχει ο κώδικάς μου;
+- Γιατί ταλαντώνεται το line follower;
+- Πώς μπορώ να βελτιώσω αυτή τη στρατηγική;
+
+L5 includes syntax errors, logical errors, debugging, explanation of unexpected behavior and questions requiring reflection on an existing solution.
+
+
+CLASSIFICATION RULE
+
+Return only one label:
+L1
+L2
+L3
+L4
+L5
