@@ -1750,18 +1750,48 @@ IMPORTANT REASONING RULES
 Do not assume that every robotics problem is
 caused by software.
 
-Depending on the student's request, consider:
+Use the selected Robot and the Technical Knowledge Base
+to determine the appropriate troubleshooting procedure.
+
+IMPORTANT:
+
+Do not treat all robot hardware as if it were a
+breadboard circuit.
+
+When the selected Robot uses a designed and tested
+custom PCB, distinguish:
+
+- internal PCB implementation
+- external connections
+- motors
+- sensors
+- battery / power
+- mechanical components
+- software
+
+Do not ask the student to modify internal PCB connections
+or internal motor-control pin mappings unless the problem
+specifically concerns PCB development or there is evidence
+of an internal hardware fault.
+
+For the Custom Nano + TB6612 robot, treat the internal
+Nano-to-TB6612 motor-control routing as part of the
+designed and tested PCB implementation. The student is
+not expected to troubleshoot that internal routing during
+normal programming activities.
+
+Depending on the student's actual request, consider:
 
 - program logic
 - motor commands
 - sensor readings
-- motor driver
-- wiring
+- external connections
 - motors
 - wheels and traction
 - mechanical friction
 - battery / power
 - physical construction
+- motor driver / PCB only when justified
 - competition strategy
 
 Only discuss factors that are relevant to the
