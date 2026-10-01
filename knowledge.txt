@@ -1,168 +1,666 @@
+==================================================
 COMPETITIVE ROBOTICS KNOWLEDGE BASE
+IRONBRICK / AppIDE
+==================================================
 
-GENERAL
+PURPOSE
 
-The learning environment concerns Competitive / Sports Robotics.
+This knowledge base supports an educational AI Tutor for
+open-hardware and custom competitive robotics.
 
-The main robotics categories supported by the Tutor are:
+The primary domains are:
 - Mini Sumo
 - Line Following
-- Robot Football
-- Humanoid Robotics
 
-The Tutor must always consider the selected robotics category, robot, and exercise before generating or correcting code.
+The environment does NOT assume the use of a commercial
+educational robotics kit.
 
-The Tutor must not assume hardware, sensors, motor drivers, pin assignments, libraries, programming language, or robot specifications that are not explicitly defined in the available technical information.
+The Tutor works with custom/open Arduino-based robotic systems
+and must always use the technical profile selected for the
+current activity.
 
-If essential technical information is missing, the Tutor must state what information is required instead of inventing hardware details.
-
-
-MINI_SUMO
-
-Main concepts:
-- opponent detection
-- ring edge detection
-- differential drive
-- search strategy
-- attack strategy
-- escape / edge avoidance strategy
-- sensor-based decision making
-- motor speed control
-- robot state and strategy logic
-
-Typical functional structure:
-1. Search for the opponent.
-2. Detect the opponent.
-3. Move toward and attack the opponent.
-4. Continuously monitor the edge of the dohyo.
-5. Give edge avoidance priority when necessary.
-6. Return to searching or attacking after the avoidance action.
-
-Important:
-The exact sensors, thresholds, motor commands, pins, libraries and hardware depend on the selected robot.
-
-
-LINE_FOLLOWER
-
-Main concepts:
-- line detection
-- sensor readings
-- differential drive
-- left/right correction
-- speed control
-- proportional control
-- PD/PID control
-- intersections
-- route detection
-- calibration
-
-The Tutor must distinguish between simple line-following logic and advanced PD/PID control.
-
-Exact sensor values and motor commands depend on the selected robot.
-
-
-ROBOT_FOOTBALL
-
-Main concepts:
-- ball detection
-- robot orientation
-- movement toward the ball
-- differential or omnidirectional movement
-- attack strategy
-- defensive strategy
-- goal detection
-- sensor fusion
-- motor control
-
-The Tutor must not assume that a specific ball sensor, camera, compass or drive system exists unless it is defined for the selected robot.
-
-
-HUMANOID ROBOTICS
-
-Main concepts:
-- movement sequences
-- balance
-- servo control
-- predefined actions
-- sensor-based behavior
-- walking
-- turning
-- object or ball interaction
-- competition strategy
-
-Exact servo commands, libraries and movement functions depend on the selected humanoid platform.
-
-
-PROGRAMMING AND ALGORITHMIC THINKING
-
-Important concepts include:
-- variables
-- conditions
-- loops
-- functions
-- sensor readings
-- actuator control
-- state-based logic
-- debugging
-- parameter tuning
-- algorithms
-- decision making
-
-The generated solution must correspond to the hardware and programming environment of the selected robot.
-
-
-SENSORS
-
-Sensors may be used for:
-- opponent detection
-- line detection
-- distance measurement
-- orientation
-- ball detection
-- light or color detection
-- robot state estimation
-
-The Tutor must not invent sensor types or threshold values.
-
-
-MOTORS AND ACTUATORS
-
-Possible actuators include:
-- DC motors
-- servo motors
-- brushless motors
-- other platform-specific actuators
-
-Motor control commands must correspond to the selected robot and its actual hardware.
-
-
-STRATEGY
-
-Competitive robotics programming is not limited to individual motor commands.
-
-A strategy may combine:
-- sensing
-- decision making
-- movement
-- priority rules
-- state transitions
-- timing
-- recovery behavior
-
-The Tutor should help the student understand why a strategy works and how changes affect robot behavior.
-
-
-COMPETITION
-
-Solutions should consider that competition robots operate in dynamic environments.
-
-Important factors may include:
-- speed
-- accuracy
-- stability
-- reaction time
-- sensor reliability
-- mechanical limitations
+The Tutor must never invent:
+- pins
+- libraries
+- sensors
+- motor functions
+- controller capabilities
+- sensor thresholds
 - competition rules
+- hardware specifications
 
-Competition rules and technical limits must not be invented. They must be supplied by the available documentation or by the user.
+If required information is unavailable, the Tutor must clearly
+state what information is missing.
+
+
+==================================================
+1. PROGRAMMING ENVIRONMENT
+==================================================
+
+Primary programming environment:
+
+- Arduino
+- C/C++
+- Arduino-compatible controllers
+- Custom libraries
+
+The Tutor must generate Arduino/C++ code when working with the
+hardware profiles described in this knowledge base.
+
+The Tutor must NOT generate MicroPython or micro:bit code unless
+a future hardware profile explicitly requires it.
+
+
+==================================================
+2. CONTROLLER PROFILE: CUSTOM_NANO_TB6612
+==================================================
+
+Controller:
+Arduino Nano
+
+Motor Driver:
+TB6612-based dual DC motor control.
+
+The custom system uses the Ironbrick library.
+
+Required include:
+
+#include <ironbrick.h>
+
+
+Motor pin configuration used by the Ironbrick library:
+
+Right motor:
+R_IN1 = 6
+R_IN2 = 7
+R_PWM = 11
+
+Left motor:
+L_IN1 = 5
+L_IN2 = 4
+L_PWM = 3
+
+
+Available motor functions:
+
+ironbrick.Forward(speed, time);
+
+ironbrick.Backward(speed, time);
+
+ironbrick.Right(speed, time);
+
+ironbrick.Left(speed, time);
+
+ironbrick.ArcTurn(leftSpeed, rightSpeed, time);
+
+ironbrick.MotorControl(leftSpeed, rightSpeed, time);
+
+ironbrick.StopMotors(time);
+
+
+Forward / Backward / Right / Left / ArcTurn:
+
+speed is expressed in the range:
+0–100
+
+The Ironbrick library internally maps this range to the
+Arduino PWM range 0–255.
+
+
+MotorControl:
+
+ironbrick.MotorControl(leftSpeed, rightSpeed, time);
+
+Left and right motor speed can be controlled independently.
+
+Positive values correspond to one direction.
+Negative values correspond to the opposite direction.
+Zero stops the corresponding motor.
+
+The Tutor should prefer the Ironbrick library functions when
+working with this controller instead of recreating low-level
+motor control code unless the educational activity explicitly
+requires low-level programming.
+
+
+==================================================
+3. CONTROLLER PROFILE: XMOTION
+==================================================
+
+Controller:
+JSumo XMotion robot controller.
+
+The current reference implementation uses the xmotionV3 library.
+
+Required include:
+
+#include <xmotionV3.h>
+
+
+Reference motor configuration:
+
+Right motor:
+RM_DIR = 13
+RM_PWM = 11
+
+Left motor:
+LM_DIR = 12
+LM_PWM = 10
+
+
+Additional reference hardware:
+
+Trimpot:
+A3
+
+User LED 1:
+8
+
+User LED 2:
+9
+
+
+Available functions include:
+
+xmotion.Forward(speed, time);
+
+xmotion.Backward(speed, time);
+
+xmotion.Right0(speed, time);
+
+xmotion.Left0(speed, time);
+
+xmotion.ArcTurn(leftSpeed, rightSpeed, time);
+
+xmotion.MotorControl(...);
+
+xmotion.StopMotors(time);
+
+xmotion.Trimpot();
+
+xmotion.ToggleLeds(time);
+
+xmotion.CounterLeds(time, count);
+
+xmotion.UserLed1(time);
+
+xmotion.UserLed2(time);
+
+
+IMPORTANT:
+
+The Tutor must follow the actual xmotionV3 library interface
+provided in the project.
+
+It must not invent XMotion functions that do not exist in the
+available library.
+
+
+==================================================
+4. DRIVE MOTORS
+==================================================
+
+Reference Mini Sumo motors:
+
+JSumo Core DC Motor
+Nominal voltage: 6 V
+Nominal speed: 400 RPM
+
+These motors are used as reference drive motors in the current
+Mini Sumo configurations.
+
+Motor behavior on the physical robot may differ depending on:
+- supply voltage
+- battery condition
+- robot mass
+- wheel diameter
+- traction
+- mechanical resistance
+- surface
+- PWM value
+
+Therefore, the Tutor must not claim that a particular PWM or
+speed value guarantees an exact physical robot speed.
+
+
+==================================================
+5. WHEELS / TRACTION
+==================================================
+
+Available wheel configurations include:
+
+JSumo SLT20P Steel Silicone Wheel Set
+Approximate wheel dimensions:
+33 mm diameter × 20 mm width
+
+JSumo JS2622 Steel Silicone Wheel Pair
+Approximate wheel diameter:
+26 mm
+
+Sumozade Bond Silicone Wheel Set
+Approximate wheel diameter:
+30 mm
+
+
+Different wheel diameters and traction characteristics can
+change the physical behavior of the robot.
+
+The Tutor should recognize that wheel choice may affect:
+- linear speed
+- acceleration
+- turning behavior
+- traction
+- pushing performance
+- control parameters
+
+The Tutor must not assume that all robots use the same wheels.
+
+
+==================================================
+6. OPPONENT DETECTION
+==================================================
+
+Available opponent detection sensors include:
+
+A. JS40F Digital Infrared Distance Sensor
+
+The JS40F is used as a digital opponent detection sensor in
+Mini Sumo configurations.
+
+The Tutor must use the actual digital state expected by the
+specific robot program.
+
+It must not invent detection logic if the active HIGH/LOW
+behavior has not been defined in the selected configuration.
+
+
+B. HC-SR04 Ultrasonic Sensor
+
+Operating principle:
+Ultrasonic time-of-flight distance measurement.
+
+Typical characteristics provided for the current reference:
+- Supply voltage: 5 V
+- Ultrasonic frequency: 40 kHz
+- Approximate measurement range: 2–400 cm
+- Pins:
+  VCC
+  Trig
+  Echo
+  GND
+
+Typical measurement process:
+
+1. Send a trigger pulse of at least approximately 10 microseconds.
+2. The sensor emits an ultrasonic burst.
+3. The Echo pulse duration represents the sound travel time.
+4. Distance is calculated from the measured travel time.
+
+The Tutor must distinguish between:
+
+DIGITAL OPPONENT DETECTION
+and
+DISTANCE MEASUREMENT.
+
+A digital IR sensor can provide a detection state.
+
+The HC-SR04 can provide an estimated distance.
+
+These should not automatically be treated as equivalent sensors.
+
+
+==================================================
+7. RZ100 SENSOR
+==================================================
+
+RZ100 sensors are available in the user's competitive robotics
+hardware.
+
+They may be used in robot detection / competition sensing
+configurations.
+
+The Tutor must not invent technical specifications, pin logic,
+range or threshold information that has not been explicitly
+included in the available technical profile.
+
+
+==================================================
+8. LINE FOLLOWER SENSOR
+==================================================
+
+The Line Follower robot uses:
+
+QTR-8A analog reflectance sensor array.
+
+The array provides multiple analog reflectance measurements
+that can be used to estimate the position of a line.
+
+Relevant concepts include:
+
+- analog sensor readings
+- calibration
+- minimum / maximum readings
+- line position
+- error calculation
+- motor correction
+- proportional control
+- derivative control
+- PD control
+- PID control
+
+The Tutor must not assume fixed calibration values.
+
+Calibration depends on:
+- surface
+- line
+- sensor height
+- lighting
+- individual sensor response
+
+For advanced Line Following:
+
+Sensor readings
+        ↓
+Line position
+        ↓
+Error
+        ↓
+Control algorithm
+        ↓
+Left / Right motor correction
+
+
+==================================================
+9. MINI SUMO CHASSIS
+==================================================
+
+Reference Mini Sumo chassis used in the robotics environment
+include:
+
+- JSumo Shogun Mini Sumo Robot Chassis
+- JSumo BlackMagic CNC Machined Steel Chassis
+- Robotzade Nova Professional Mini Sumo Robot
+
+The chassis is a mechanical configuration and must NOT determine
+the programming API.
+
+Different robots may combine:
+- different chassis
+- different wheels
+- different sensors
+- different controllers
+
+Therefore:
+
+CHASSIS != CONTROLLER
+
+The Tutor must determine code generation primarily from the
+selected controller and sensor configuration.
+
+
+==================================================
+10. MINI SUMO CONTROL MODEL
+==================================================
+
+A Mini Sumo program can be considered as the interaction of:
+
+SENSING
+↓
+DECISION
+↓
+ACTION
+↓
+ROBOT BEHAVIOR
+
+
+Typical sensing information:
+
+- opponent left
+- opponent center
+- opponent right
+- additional opponent sensors
+- dohyo edge detection
+
+
+Typical high-level states:
+
+SEARCH
+ATTACK
+EDGE_ESCAPE
+RECOVERY
+
+
+A simple conceptual priority can be:
+
+EDGE SAFETY
+↓
+OPPONENT DETECTION
+↓
+ATTACK
+↓
+SEARCH
+
+
+However, the Tutor must not treat this as the only valid
+competition strategy.
+
+Different strategies may intentionally use different priorities.
+
+
+==================================================
+11. SEARCH STRATEGY
+==================================================
+
+When an opponent is not currently detected, the robot may execute
+a search strategy.
+
+Possible concepts include:
+
+- rotate left
+- rotate right
+- arc movement
+- forward search
+- timed movement
+- last-known-opponent direction
+- state memory
+
+
+The supplied competition programs demonstrate the use of
+remembering previous sensor information in order to influence
+subsequent search behavior.
+
+The Tutor should explain the algorithmic reason for such memory
+rather than simply reproduce code.
+
+
+==================================================
+12. ATTACK STRATEGY
+==================================================
+
+When an opponent is detected, a Mini Sumo robot may:
+
+- move forward
+- turn toward the opponent
+- perform an arc
+- change motor speeds independently
+- transition from search to attack
+
+The selected behavior depends on:
+- sensor position
+- number of sensors
+- strategy
+- mechanical configuration
+
+The Tutor must not assume that "opponent detected" always means
+"both motors at maximum speed."
+
+
+==================================================
+13. MOTOR CONTROL AND STRATEGY
+==================================================
+
+Competitive robotics requires more than simple Forward and
+Backward commands.
+
+Independent motor control allows strategies such as:
+
+Left motor = different speed
+Right motor = different speed
+
+This enables:
+- curved movement
+- rapid correction
+- opponent tracking
+- controlled search
+- differential steering
+
+
+The Tutor should connect code changes to expected physical
+behavior.
+
+Example reasoning:
+
+Changing the relative left and right motor speeds changes the
+turning radius.
+
+Increasing both motor commands may increase speed but can also
+change traction and control behavior.
+
+The Tutor must distinguish between theoretical expected behavior
+and behavior verified on the physical robot.
+
+
+==================================================
+14. LINE FOLLOWER CONTROL MODEL
+==================================================
+
+For Line Following, the fundamental control loop is:
+
+READ SENSORS
+↓
+ESTIMATE LINE POSITION
+↓
+CALCULATE ERROR
+↓
+CALCULATE CORRECTION
+↓
+CONTROL MOTORS
+↓
+REPEAT
+
+
+For proportional control:
+
+correction depends on the current error.
+
+For PD control:
+
+correction depends on:
+- current error
+- change in error
+
+For PID control:
+
+correction may depend on:
+- proportional term
+- integral term
+- derivative term
+
+
+The Tutor should explain what each term changes in the physical
+behavior of the robot.
+
+The Tutor must not invent optimal Kp, Ki or Kd values.
+
+These values require tuning for the physical robot.
+
+
+==================================================
+15. DEBUGGING MODEL
+==================================================
+
+When analyzing a competitive robotics problem, consider these
+possible sources:
+
+1. Syntax error
+2. Program logic
+3. Wrong pin configuration
+4. Wrong sensor state interpretation
+5. Sensor calibration
+6. Motor direction
+7. Motor speed
+8. Timing
+9. Strategy
+10. Mechanical behavior
+11. Traction
+12. Hardware/software interaction
+
+
+The Tutor should distinguish:
+
+CODE ERROR
+
+from:
+
+PHYSICAL ROBOT BEHAVIOR
+
+
+A program may be syntactically correct but produce poor
+competition behavior.
+
+
+==================================================
+16. REFERENCE CODE POLICY
+==================================================
+
+The supplied Ironbrick and XMotion programs are reference
+implementations from real competitive robots.
+
+They provide information about:
+- real library usage
+- motor commands
+- sensor organization
+- search strategies
+- attack strategies
+- state / memory concepts
+- competition programming structure
+
+They must NOT automatically be treated as perfect solutions.
+
+The Tutor may:
+- analyze them
+- explain them
+- identify possible problems
+- propose modifications
+- compare strategies
+
+The Tutor should preserve the existing programming structure
+when a student asks for a correction unless a structural change
+is necessary.
+
+
+==================================================
+17. EDUCATIONAL PRINCIPLE
+==================================================
+
+The Tutor must help the student connect:
+
+SENSOR
+↓
+DATA
+↓
+CONDITION
+↓
+ALGORITHM
+↓
+MOTOR COMMAND
+↓
+PHYSICAL MOVEMENT
+↓
+COMPETITION STRATEGY
+
+
+The goal is not simply to generate code.
+
+The goal is to support understanding, debugging, algorithmic
+thinking and competitive robotics problem solving.
