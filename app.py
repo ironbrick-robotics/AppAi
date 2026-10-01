@@ -1320,13 +1320,18 @@ elif st.session_state.user_role == "tutor":
     try:
         if "GROQ_API_KEY" in st.secrets:
             client = OpenAI(
-               base_url="https://api.groq.com/openai/v1",
+                base_url="https://api.groq.com/openai/v1",
                 api_key=st.secrets["GROQ_API_KEY"]
             )
+        else:
+            client = None
+            st.error("Δεν βρέθηκε το GROQ_API_KEY στα Streamlit secrets.")
 
         DB_URL = st.secrets.get("GSHEET_URL", "")
 
     except Exception as e:
+        client = None
+        DB_URL = ""
         st.error(f"Config Error: {e}")
 
     # ------------------------------------------
@@ -1546,8 +1551,9 @@ elif st.session_state.user_role == "tutor":
                     "Κείμενο:",
                     height=180,
                     placeholder=(
-                        "Περιέγραψε τι θέλεις να κάνει το ρομπότ "
-                        "ή το πρόβλημα που αντιμετωπίζεις..."
+                        "Περιέγραψε τι θέλεις να κάνει το ρομπότ, "
+                        "ρώτησε κάτι ή περιέγραψε το πρόβλημα "
+                        "που αντιμετωπίζεις..."
                     )
                 )
 
@@ -1561,6 +1567,10 @@ elif st.session_state.user_role == "tutor":
         with col2:
 
             if btn and user_input:
+
+                if client is None:
+                    st.error("Δεν υπάρχει ενεργή σύνδεση με το Groq API.")
+                    st.stop()
 
                 # ----------------------------------
                 # LOAD RESEARCH FILES
@@ -1589,7 +1599,7 @@ elif st.session_state.user_role == "tutor":
                     exercise_id = "FREE"
 
                 # ----------------------------------
-                # STRUCTURED ROBOT CONTEXT
+                # ROBOT CONTEXT
                 # ----------------------------------
                 robot_context = f"""
 CURRENT ROBOTICS CONTEXT
@@ -1606,6 +1616,9 @@ Work Type:
 Exercise:
 {exercise_id}
 
+Action:
+{mode}
+
 Programming Environment:
 Arduino / C++
 
@@ -1613,18 +1626,17 @@ IMPORTANT:
 Use ONLY hardware information and programming interfaces
 supported by the provided Knowledge Base.
 
-Do not invent:
+Never invent:
 - pins
 - libraries
 - sensor thresholds
 - motor functions
 - hardware capabilities
+- electrical measurements
 - competition rules
+- experimental results
 """
 
-                # ----------------------------------
-                # MESSAGE FOR THIS INTERACTION
-                # ----------------------------------
                 contextual_user_message = f"""
 {robot_context}
 
@@ -1632,20 +1644,13 @@ STUDENT REQUEST:
 {user_input}
 """
 
-                st.session_state.chat_history.append(
-                    {
-                        "role": "user",
-                        "content": contextual_user_message
-                    }
-                )
-
-                with st.spinner("Ανάλυση αγωνιστικού ρομπότ..."):
+                # ==================================
+                # 1. L1-L5 CLASSIFICATION
+                # ==================================
+                with st.spinner("Ανάλυση του αιτήματος..."):
 
                     try:
 
-                        # ==================================
-                        # 1. L1-L5 CLASSIFICATION
-                        # ==================================
                         class_sys = f"""
 You are an educational researcher studying
 student interactions in competitive robotics.
@@ -1658,8 +1663,8 @@ one level using ONLY the following rubric:
 Use the student's actual request as the main
 basis for classification.
 
-The selected exercise must NOT determine the
-classification level.
+The selected exercise must NOT determine
+the classification level.
 
 Return ONLY one label:
 
@@ -1693,10 +1698,23 @@ L5
                             .strip()
                         )
 
+                        # ----------------------------------
+                        # SAFETY FOR CLASSIFICATION OUTPUT
+                        # ----------------------------------
+                        level_match = re.search(
+                            r'\bL[1-5]\b',
+                            auto_level.upper()
+                        )
+
+                        if level_match:
+                            auto_level = level_match.group(0)
+                        else:
+                            auto_level = "N/A"
+
                         # ==================================
-                        # 2. CODE GENERATION
+                        # 2. COMPLETE TUTOR RESPONSE
                         # ==================================
-                        code_sys = f"""
+                        tutor_sys = f"""
 {my_behavior}
 
 ==================================================
@@ -1712,99 +1730,256 @@ CURRENT ROBOT CONFIGURATION
 {robot_context}
 
 ==================================================
-IMPORTANT PEDAGOGICAL RULE
+ROLE
 ==================================================
 
-Before changing code, consider whether the student's
-problem is necessarily caused by software.
+You are an educational tutor for competitive robotics.
 
-In competitive robotics, unexpected behavior may
-also result from:
+The student must receive useful educational support,
+not simply generated code.
 
-- motor differences
-- mechanical friction
-- wheel traction
-- battery condition
+Answer in Greek.
+
+Use clear language appropriate for a student
+learning robotics and programming.
+
+==================================================
+IMPORTANT REASONING RULES
+==================================================
+
+Do not assume that every robotics problem is
+caused by software.
+
+Depending on the student's request, consider:
+
+- program logic
+- motor commands
+- sensor readings
+- motor driver
 - wiring
-- sensor behavior
-- motor driver behavior
+- motors
+- wheels and traction
+- mechanical friction
+- battery / power
 - physical construction
+- competition strategy
 
-Do not automatically compensate for a physical
-problem by changing motor PWM.
+Only discuss factors that are relevant to the
+student's actual request.
 
-If the cause cannot be determined from the supplied
-information, preserve that uncertainty.
+Do not claim that a possible cause is the real cause
+unless the available evidence proves it.
+
+Clearly distinguish:
+
+- what we know,
+- what is a possible explanation,
+- what should be tested.
+
+Do not invent numerical values.
+
+Do not invent electrical characteristics.
+
+Do not invent pins.
+
+Do not invent sensor thresholds.
+
+Do not invent library functions.
+
+Do not invent hardware capabilities.
+
+Do not invent test results.
 
 ==================================================
-CODE GENERATION RULES
+ROBOT LIBRARIES
 ==================================================
-
-Generate Arduino C/C++ code appropriate for the
-selected robot configuration.
 
 If Robot is:
 
 Custom Nano + TB6612
 
-use the Ironbrick library interface described in
-the Knowledge Base.
+use ONLY the Ironbrick library interface described
+in the Knowledge Base.
 
 If Robot is:
 
 XMotion
 
-use the xmotionV3 library interface described in
-the Knowledge Base.
+use ONLY the xmotionV3 library interface described
+in the Knowledge Base.
 
-Do NOT invent functions.
+==================================================
+STUDENT CODE
+==================================================
 
-Do NOT invent pin assignments.
+If the student provides existing code and asks
+for correction:
 
-Do NOT invent sensor thresholds.
+- preserve its structure whenever possible,
+- identify the relevant problem,
+- change only what is necessary,
+- explain why the change is proposed.
 
-Do NOT invent missing hardware information.
+If the student does not provide enough information
+for a specific correction, say what information is
+needed.
 
-When the student's request is a correction, preserve
-as much of the student's existing code structure as
-possible.
+==================================================
+RESPONSE FORMAT
+==================================================
 
-If sufficient information exists to produce code:
+Return the answer using EXACTLY the following markers.
 
-Output ONLY Arduino C/C++ code.
+Do not use these markers anywhere else.
 
-No Markdown code blocks.
-No introductory text.
-No explanation outside the code.
+[ANALYSIS]
+Explain what the student's request or problem means.
+State what can reasonably be concluded from the
+available information.
 
-If sufficient technical information does NOT exist,
-output exactly:
+[CAUSES]
+Give relevant possible causes.
+Do not present possibilities as confirmed facts.
+If possible causes are not relevant, write NONE.
 
-NEED_MORE_INFORMATION
+[CHECKS]
+Give practical diagnostic checks or steps the student
+can perform.
+If no checks are needed, write NONE.
+
+[SOLUTIONS]
+Give one or more appropriate proposed solutions.
+Explain briefly when each solution is appropriate.
+If a definitive solution cannot yet be selected,
+make that clear.
+
+[CODE]
+If useful and technically justified, provide Arduino
+C/C++ code using ONLY the known robot interface.
+
+Do NOT use Markdown code fences.
+
+If code is not necessary or cannot safely be produced,
+write exactly:
+NONE
+
+[MISSING]
+List only information that is genuinely necessary
+to improve or complete the answer.
+
+If nothing else is required, write exactly:
+NONE
+
+==================================================
+PEDAGOGICAL GOAL
+==================================================
+
+Whenever appropriate, help the student connect:
+
+input / sensor
+→ decision
+→ algorithm
+→ motor command
+→ physical robot behavior
+→ competition strategy
+
+Do not force all of these concepts into the answer
+when they are not relevant.
+
+The response should be useful, concise and technically
+grounded.
 """
 
-                        code_res = client.chat.completions.create(
+                        tutor_res = client.chat.completions.create(
                             model="openai/gpt-oss-120b",
                             messages=[
                                 {
                                     "role": "system",
-                                    "content": code_sys
+                                    "content": tutor_sys
+                                },
+                                {
+                                    "role": "user",
+                                    "content": contextual_user_message
                                 }
-                            ] + st.session_state.chat_history
+                            ]
                         )
 
-                        raw_output = (
-                            code_res
+                        raw_answer = (
+                            tutor_res
                             .choices[0]
                             .message
                             .content
                             .strip()
                         )
 
-                        clean_code = re.sub(
-                            r'```(?:cpp|c\+\+|c|arduino|)?',
+                        # ==================================
+                        # 3. PARSE STRUCTURED RESPONSE
+                        # ==================================
+                        def extract_section(text, section, next_sections):
+                            start_marker = f"[{section}]"
+
+                            if start_marker not in text:
+                                return ""
+
+                            content = text.split(start_marker, 1)[1]
+
+                            positions = []
+
+                            for next_section in next_sections:
+                                marker = f"[{next_section}]"
+                                pos = content.find(marker)
+
+                                if pos != -1:
+                                    positions.append(pos)
+
+                            if positions:
+                                content = content[:min(positions)]
+
+                            return content.strip()
+
+                        analysis_text = extract_section(
+                            raw_answer,
+                            "ANALYSIS",
+                            ["CAUSES", "CHECKS", "SOLUTIONS", "CODE", "MISSING"]
+                        )
+
+                        causes_text = extract_section(
+                            raw_answer,
+                            "CAUSES",
+                            ["CHECKS", "SOLUTIONS", "CODE", "MISSING"]
+                        )
+
+                        checks_text = extract_section(
+                            raw_answer,
+                            "CHECKS",
+                            ["SOLUTIONS", "CODE", "MISSING"]
+                        )
+
+                        solutions_text = extract_section(
+                            raw_answer,
+                            "SOLUTIONS",
+                            ["CODE", "MISSING"]
+                        )
+
+                        code_text = extract_section(
+                            raw_answer,
+                            "CODE",
+                            ["MISSING"]
+                        )
+
+                        missing_text = extract_section(
+                            raw_answer,
+                            "MISSING",
+                            []
+                        )
+
+                        # ----------------------------------
+                        # REMOVE POSSIBLE CODE FENCES
+                        # ----------------------------------
+                        code_text = re.sub(
+                            r'```(?:cpp|c\+\+|c|arduino)?',
                             '',
-                            raw_output,
+                            code_text,
                             flags=re.IGNORECASE
                         ).replace(
                             '```',
@@ -1812,7 +1987,7 @@ NEED_MORE_INFORMATION
                         ).strip()
 
                         # ==================================
-                        # DISPLAY
+                        # 4. DISPLAY RESPONSE
                         # ==================================
                         st.markdown(
                             f"### Απάντηση — {category}"
@@ -1822,153 +1997,106 @@ NEED_MORE_INFORMATION
                             f"{robot} | {exercise_id} | Επίπεδο: {auto_level}"
                         )
 
-                        if clean_code == "NEED_MORE_INFORMATION":
+                        # ----------------------------------
+                        # ANALYSIS
+                        # ----------------------------------
+                        if analysis_text and analysis_text.upper() != "NONE":
 
-                            st.warning(
-                                "Δεν υπάρχουν ακόμη αρκετές τεχνικές "
-                                "πληροφορίες για ασφαλή παραγωγή συγκεκριμένου "
-                                "κώδικα. Δες την ανάλυση παρακάτω."
-                            )
+                            st.markdown("#### 🔍 Ανάλυση προβλήματος")
+                            st.markdown(analysis_text)
 
-                        else:
+                        # ----------------------------------
+                        # POSSIBLE CAUSES
+                        # ----------------------------------
+                        if causes_text and causes_text.upper() != "NONE":
+
+                            st.markdown("#### 💡 Πιθανές αιτίες")
+                            st.markdown(causes_text)
+
+                        # ----------------------------------
+                        # CHECKS
+                        # ----------------------------------
+                        if checks_text and checks_text.upper() != "NONE":
+
+                            st.markdown("#### 🔧 Τι να ελέγξεις")
+                            st.markdown(checks_text)
+
+                        # ----------------------------------
+                        # SOLUTIONS
+                        # ----------------------------------
+                        if solutions_text and solutions_text.upper() != "NONE":
+
+                            st.markdown("#### ✅ Προτεινόμενες λύσεις")
+                            st.markdown(solutions_text)
+
+                        # ----------------------------------
+                        # CODE
+                        # ----------------------------------
+                        if code_text and code_text.upper() != "NONE":
+
+                            st.markdown("#### 💻 Προτεινόμενος κώδικας")
 
                             st.code(
-                                clean_code,
+                                code_text,
                                 language="cpp"
                             )
 
-                        # ==================================
-                        # 3. PEDAGOGICAL HELP
-                        # ==================================
-                        with st.expander(
-                            "Βοήθεια / Ανάλυση",
-                            expanded=True
-                        ):
+                        # ----------------------------------
+                        # MISSING INFORMATION
+                        # ----------------------------------
+                        if missing_text and missing_text.upper() != "NONE":
 
-                            if mode == "Διόρθωση":
+                            st.markdown("#### 📌 Χρειάζομαι επιπλέον")
 
-                                help_sys = f"""
-{my_behavior}
+                            st.info(missing_text)
 
-You are a competitive robotics educator.
+                        # ----------------------------------
+                        # FALLBACK
+                        # ----------------------------------
+                        if not any([
+                            analysis_text,
+                            causes_text,
+                            checks_text,
+                            solutions_text,
+                            code_text,
+                            missing_text
+                        ]):
 
-CURRENT CONTEXT:
-
-{robot_context}
-
-The student reports a problem or requests
-a correction.
-
-Respond in Greek.
-
-Your task is NOT to assume immediately that
-the problem is caused by code.
-
-Analyze the available evidence.
-
-Consider separately:
-
-1. Program logic
-2. Motor commands
-3. Sensors
-4. Motor driver
-5. Wiring
-6. Motors
-7. Wheels / traction
-8. Mechanical friction
-9. Power / battery
-10. Competition strategy
-
-Explain:
-
-- what can be concluded from the information,
-- what cannot yet be concluded,
-- what the student should check,
-- and why.
-
-If a software correction is justified, explain
-what should change.
-
-If the evidence is insufficient, ask for the
-specific information required to continue.
-
-Do not invent measurements or test results.
-
-Do not claim that a physical cause has been
-confirmed unless it has actually been tested.
-"""
-
-                            else:
-
-                                help_sys = f"""
-{my_behavior}
-
-You are a competitive robotics educator.
-
-CURRENT CONTEXT:
-
-{robot_context}
-
-Respond in Greek.
-
-Explain the student's request using the relationship:
-
-SENSOR / INPUT
-→ DECISION
-→ ALGORITHM
-→ MOTOR COMMAND
-→ PHYSICAL ROBOT BEHAVIOR
-→ COMPETITION STRATEGY
-
-If code has been generated, explain briefly
-what it does.
-
-If code could not safely be generated, explain
-which technical information is missing.
-
-Give guidance that helps the student understand
-the problem rather than simply providing an answer.
-
-Do not invent hardware characteristics.
-"""
-
-                            help_user_content = f"""
-Student request:
-
-{user_input}
-
-Generated result:
-
-{clean_code}
-"""
-
-                            help_res = client.chat.completions.create(
-                                model="openai/gpt-oss-120b",
-                                messages=[
-                                    {
-                                        "role": "system",
-                                        "content": help_sys
-                                    },
-                                    {
-                                        "role": "user",
-                                        "content": help_user_content
-                                    }
-                                ]
-                            )
-
-                            help_text = (
-                                help_res
-                                .choices[0]
-                                .message
-                                .content
-                            )
-
-                            st.write(help_text)
+                            st.markdown("#### Απάντηση")
+                            st.markdown(raw_answer)
 
                         # ==================================
-                        # 4. GOOGLE SHEET LOGGING
+                        # 5. SAVE CHAT HISTORY
+                        # ==================================
+                        st.session_state.chat_history.append(
+                            {
+                                "role": "user",
+                                "content": contextual_user_message
+                            }
+                        )
+
+                        st.session_state.chat_history.append(
+                            {
+                                "role": "assistant",
+                                "content": raw_answer
+                            }
+                        )
+
+                        # ==================================
+                        # 6. GOOGLE SHEET LOGGING
                         # ==================================
                         if DB_URL:
+
+                            code_for_log = ""
+
+                            if (
+                                code_text
+                                and code_text.upper() != "NONE"
+                            ):
+                                code_for_log = code_text.replace(
+                                    '"',
+                                    "'"
+                                )
 
                             requests.post(
                                 DB_URL,
@@ -1985,14 +2113,11 @@ Generated result:
                                             "Robot": robot,
                                             "Exercise_ID": exercise_id,
                                             "Prompt": user_input,
-                                            "Code": (
-                                                ""
-                                                if clean_code == "NEED_MORE_INFORMATION"
-                                                else clean_code.replace('"', "'")
-                                            )
+                                            "Code": code_for_log
                                         }
                                     ]
-                                }
+                                },
+                                timeout=10
                             )
 
                     except Exception as e:
