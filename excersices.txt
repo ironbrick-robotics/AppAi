@@ -1,31 +1,131 @@
-Φύλλο Εργασίας 1: Emotions
-  - Στόχος: Μάθε να «μιλάς» στην Python και να εμφανίζεις "εικόνες".
-  - Η Αποστολή: Το micro:bit σου πρέπει να γίνει ένας ψηφιακός καθρέφτης συναισθημάτων.
-  - Προδιαγραφές:
-      - Όταν ξεκινάει το πρόγραμμα, να εμφανίζεται μια καρδιά (HEART).
-      - Όταν πατάς το κουμπί Α, το micro:bit να δείχνει έναν θυμωμένο πρόσωπο (ANGRY).
-      - Όταν πατάς το κουμπί Β, να δείχνει ένα πρόσωπο που εκπλήσσεται (SURPRISED).
----------------------------------------------------------------------------------------
-Φύλλο Εργασίας 2: Step Counter
-  - Στόχος: Κατανόησε πώς η Python «θυμάται» πληροφορίες χρησιμοποιώντας μεταβλητές.
-  - Η Αποστολή: Θα φτιάξεις ένα εργαλείο που μετράει πόσες φορές κούνησες το micro:bit.
-  - Προδιαγραφές:
-      - Δημιούργησε μια μεταβλητή με το όνομα steps που ξεκινάει από το 0.
-      - Κάθε φορά που το micro:bit ανιχνεύει κίνηση (shake), η μεταβλητή steps πρέπει να αυξάνεται κατά 1.
-      - Όταν πατάς το κουμπί Α, το micro:bit πρέπει να δείχνει στην οθόνη τον τρέχοντα αριθμό των βημάτων.
---------------------------------------------------------------------------------------
-Φύλλο Εργασίας 3: Digital Dice
-  - Στόχος: Μάθε να χρησιμοποιείς «έτοιμες γνώσεις» (βιβλιοθήκες) για να παράγεις τυχαίους αριθμούς.
-  - Η Αποστολή: Αντικατάστησε το κλασικό ζάρι με το micro:bit.
-  - Προδιαγραφές:
-      - Όταν κουνάς το micro:bit (shake), πρέπει να επιλέγεται ένας τυχαίος αριθμός από το 1 έως το 6.
-      - Εμφάνισε τον αριθμό στην οθόνη.
-      - Αν ο αριθμός είναι το 6, παίξε έναν σύντομο ήχο πανηγυρισμού.
---------------------------------------------------------------------------------------
-Φύλλο Εργασίας 4: Pro Alarm
-  - Στόχος: Συνδύασε όλες σου τις γνώσεις για να λύσεις ένα σύνθετο πρόβλημα.
-  - Η Αποστολή: Φτιάξε έναν συναγερμό που προστατεύει το δωμάτιό σου το βράδυ.
-  - Προδιαγραφές:
-      - Ο συναγερμός πρέπει να λειτουργεί μόνο όταν το φως είναι χαμηλό (π.χ. κάτω από 20).
-      - Αν είναι σκοτάδι και το micro:bit ανιχνεύσει κίνηση (shake), τότε πρέπει να εμφανίζει ένα "X" και να παίζει μια προειδοποιητική μελωδία
-      - Ο συναγερμός πρέπει να σταματάει μόνο αν ο ιδιοκτήτης πατήσει ταυτόχρονα τα κουμπιά Α και Β.
+COMPETITIVE ROBOTICS EXERCISES
+
+
+==========================================
+MINI SUMO
+==========================================
+
+MS-01 — Opponent Detection
+
+Goal:
+Use the opponent detection sensor(s) to determine whether an opponent is detected.
+
+The student should understand:
+- sensor reading
+- threshold or detection state
+- conditional logic
+
+
+MS-02 — Basic Attack
+
+Goal:
+When the opponent is detected, the robot moves toward it.
+
+The student should understand:
+- opponent detection
+- conditions
+- motor control
+- relationship between sensor input and robot action
+
+
+MS-03 — Ring Edge Detection
+
+Goal:
+Detect the boundary of the dohyo using the robot's edge/line sensors.
+
+The student should understand:
+- sensor values
+- boundary detection
+- threshold logic
+
+
+MS-04 — Edge Avoidance
+
+Goal:
+When the robot detects the edge of the dohyo, it must stop the attack and move away from the boundary.
+
+The student should understand:
+- priority conditions
+- sensor-based reaction
+- safe movement
+
+
+MS-05 — Search Strategy
+
+Goal:
+Create a simple strategy that allows the robot to search for the opponent when no opponent is detected.
+
+The student should understand:
+- robot states
+- searching behavior
+- movement strategy
+
+
+MS-06 — Search, Attack and Escape
+
+Goal:
+Combine opponent detection, searching, attacking and edge avoidance into one algorithm.
+
+The student should understand:
+- multiple conditions
+- priority rules
+- state-based behavior
+- competition strategy
+
+
+MS-07 — Debugging a Mini Sumo Strategy
+
+Goal:
+Analyze a Mini Sumo program that does not behave as expected and identify the cause.
+
+The student should:
+- identify the problem
+- explain why it occurs
+- propose a correction
+- evaluate the resulting robot behavior
+
+
+==========================================
+LINE FOLLOWING
+==========================================
+
+LF-01 — Line Detection
+
+Goal:
+Read the line sensor(s) and determine the position of the robot relative to the line.
+
+
+LF-02 — Basic Motor Correction
+
+Goal:
+Change the speed or direction of the motors according to the detected position of the line.
+
+
+LF-03 — Two-Sensor Line Following
+
+Goal:
+Combine left and right sensor readings to keep the robot following the line.
+
+
+LF-04 — Speed and Stability
+
+Goal:
+Investigate how motor speed affects the stability of line following.
+
+
+LF-05 — Proportional Control
+
+Goal:
+Use the line position error to calculate an appropriate steering correction.
+
+
+LF-06 — PD/PID Line Following
+
+Goal:
+Use proportional and derivative, or PID, control to improve line-following performance.
+
+
+LF-07 — Debugging a Line-Following Algorithm
+
+Goal:
+Analyze incorrect or unstable line-following behavior and identify possible problems in the algorithm or its parameters.
