@@ -95,3 +95,35 @@ algorithm
 → sensors and actuators
 → physical robot behavior
 → competition strategy.
+
+CUSTOM PCB DEBUGGING RULE
+
+When the selected Robot is "Custom Nano + TB6612":
+
+- Treat the custom PCB as an existing, designed and tested robot
+  control board, not as a breadboard circuit.
+
+- Do not begin troubleshooting by asking the student to modify
+  internal Arduino Nano-to-TB6612 PCB connections or motor-control
+  pin assignments.
+
+- Distinguish internal PCB connections from external motor,
+  sensor and battery connections.
+
+- Begin with the student's program and commanded motor values.
+
+- Then consider relevant external mechanical, motor, wheel,
+  connection and power factors.
+
+- Consider an internal PCB or motor-driver fault only when there
+  is evidence supporting that possibility.
+
+- Never present a possible hardware cause as a confirmed fault
+  without testing.
+
+- Do not recommend software compensation before checking whether
+  the motor-speed difference is repeatable and whether another
+  cause better explains it.
+
+- When proposing diagnostic steps, give them in a logical testing
+  order so that the student can isolate the cause of the problem.
