@@ -114,7 +114,7 @@ if not st.session_state.logged_in:
         login_btn = st.form_submit_button("Είσοδος")
         
         if login_btn:
-            if input_user == "argykoyr" and input_pass == "ai_agent":
+            if input_user == "argykoyr" and input_pass == "ai_mentor":
                 st.session_state.logged_in = True
                 st.session_state.user_role = "tutor"
                 st.session_state.admin_subpage = "menu"
@@ -1288,5 +1288,596 @@ if st.session_state.user_role == "admin":
 # 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
 elif st.session_state.user_role == "tutor":
-    st.title("AppIDE: LLM-Based Robotics Tutor")
-    # (Το περιβάλλον Tutor παραμένει αμετάβλητο)
+
+    st.title("AppIDE: LLM-Based Competitive Robotics Tutor")
+    st.caption("Open-Hardware Competitive Robotics Learning Environment")
+
+    # ------------------------------------------
+    # ΦΟΡΤΩΣΗ ΕΡΕΥΝΗΤΙΚΩΝ ΑΡΧΕΙΩΝ
+    # ------------------------------------------
+    def load_research_file(filename, default_text):
+        if os.path.exists(filename):
+            with open(filename, "r", encoding="utf-8") as f:
+                return f.read()
+        return default_text
+
+    # ------------------------------------------
+    # GROQ / GOOGLE SHEET
+    # ------------------------------------------
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            client = OpenAI(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=st.secrets["GROQ_API_KEY"]
+            )
+
+        DB_URL = st.secrets.get("GSHEET_URL", "")
+
+    except Exception as e:
+        st.error(f"Config Error: {e}")
+
+    # ------------------------------------------
+    # CHAT HISTORY
+    # ------------------------------------------
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+
+    # ------------------------------------------
+    # TABS
+    # ------------------------------------------
+    tab_ide, tab_config, tab_pre, tab_post, tab_exercises = st.tabs(
+        ["AppIDE", "Help", "Pre Test", "Post Test", "Exercises"]
+    )
+
+    # ------------------------------------------
+    # PRE TEST
+    # ------------------------------------------
+    with tab_pre:
+
+        st.subheader("Αρχική Αξιολόγηση")
+
+        pre_test_url = "https://forms.gle/wHkXG48y6xwWJV929"
+
+        components.iframe(
+            pre_test_url,
+            height=800,
+            scrolling=True
+        )
+
+    # ------------------------------------------
+    # POST TEST
+    # ------------------------------------------
+    with tab_post:
+
+        st.subheader("Τελική Αξιολόγηση")
+
+        post_test_url = "https://forms.gle/V5AW1eTAFRHEiaBs5"
+
+        components.iframe(
+            post_test_url,
+            height=800,
+            scrolling=True
+        )
+
+    # ------------------------------------------
+    # EXERCISES
+    # ------------------------------------------
+    with tab_exercises:
+
+        st.subheader("Ασκήσεις Αθλητικής Ρομποτικής")
+
+        st.text_area(
+            "excersices.txt",
+            load_research_file(
+                "excersices.txt",
+                "No exercises found."
+            ),
+            height=1200,
+            disabled=True
+        )
+
+    # ------------------------------------------
+    # HELP / CONFIGURATION
+    # ------------------------------------------
+    with tab_config:
+
+        col_r, col_k, col_b = st.columns(3)
+
+        with col_r:
+
+            st.subheader("Rubric (L1-L5)")
+
+            st.text_area(
+                "rubric.txt",
+                load_research_file(
+                    "rubric.txt",
+                    "No rubric found."
+                ),
+                height=500,
+                disabled=True
+            )
+
+        with col_k:
+
+            st.subheader("Competitive Robotics Knowledge Base")
+
+            st.text_area(
+                "knowledge.txt",
+                load_research_file(
+                    "knowledge.txt",
+                    "No knowledge base found."
+                ),
+                height=500,
+                disabled=True
+            )
+
+        with col_b:
+
+            st.subheader("Tutor Behavior")
+
+            st.text_area(
+                "behavior.txt",
+                load_research_file(
+                    "behavior.txt",
+                    "No behavior found."
+                ),
+                height=500,
+                disabled=True
+            )
+
+    # ==========================================
+    # MAIN IDE
+    # ==========================================
+    with tab_ide:
+
+        col1, col2 = st.columns([1, 1])
+
+        # ======================================
+        # STUDENT INPUT
+        # ======================================
+        with col1:
+
+            with st.form("input_form"):
+
+                student_id = st.text_input(
+                    "ID Μαθητή:",
+                    "---"
+                )
+
+                # ----------------------------------
+                # CATEGORY
+                # ----------------------------------
+                category = st.selectbox(
+                    "Κατηγορία Αθλητικής Ρομποτικής:",
+                    [
+                        "Mini Sumo",
+                        "Line Follower"
+                    ]
+                )
+
+                # ----------------------------------
+                # CONTROLLER
+                # ----------------------------------
+                if category == "Mini Sumo":
+
+                    controller_options = [
+                        "Custom Nano + TB6612",
+                        "XMotion"
+                    ]
+
+                else:
+
+                    controller_options = [
+                        "Custom Nano + TB6612"
+                    ]
+
+                controller = st.selectbox(
+                    "Controller:",
+                    controller_options
+                )
+
+                # ----------------------------------
+                # EXERCISE
+                # ----------------------------------
+                if category == "Mini Sumo":
+
+                    exercise_options = [
+                        "MS-01 - Opponent Detection",
+                        "MS-02 - Basic Attack",
+                        "MS-03 - Ring Edge Detection",
+                        "MS-04 - Edge Avoidance",
+                        "MS-05 - Search Strategy",
+                        "MS-06 - Search, Attack and Escape",
+                        "MS-07 - Debugging Mini Sumo Strategy"
+                    ]
+
+                else:
+
+                    exercise_options = [
+                        "LF-01 - Line Detection",
+                        "LF-02 - Basic Motor Correction",
+                        "LF-03 - Two-Sensor Line Following",
+                        "LF-04 - Speed and Stability",
+                        "LF-05 - Proportional Control",
+                        "LF-06 - PD/PID Line Following",
+                        "LF-07 - Debugging Line-Following Algorithm"
+                    ]
+
+                exercise = st.selectbox(
+                    "Άσκηση:",
+                    exercise_options
+                )
+
+                # ----------------------------------
+                # ACTION
+                # ----------------------------------
+                mode = st.radio(
+                    "Ενέργεια:",
+                    [
+                        "Νέα_Εντολή",
+                        "Διόρθωση"
+                    ],
+                    horizontal=True
+                )
+
+                # ----------------------------------
+                # STUDENT PROMPT
+                # ----------------------------------
+                user_input = st.text_area(
+                    "Κείμενο:",
+                    height=150,
+                    placeholder="Περιέγραψε τι θέλεις να κάνει το ρομπότ ή το πρόβλημα που αντιμετωπίζεις..."
+                )
+
+                btn = st.form_submit_button(
+                    "Εκτέλεση & Αποθήκευση"
+                )
+
+        # ======================================
+        # AI RESPONSE
+        # ======================================
+        with col2:
+
+            if btn and user_input:
+
+                # ----------------------------------
+                # LOAD KNOWLEDGE
+                # ----------------------------------
+                my_rubric = load_research_file(
+                    "rubric.txt",
+                    "Categorize L1 to L5."
+                )
+
+                my_knowledge = load_research_file(
+                    "knowledge.txt",
+                    "Competitive robotics knowledge base."
+                )
+
+                my_behavior = load_research_file(
+                    "behavior.txt",
+                    "Be a professional competitive robotics educator."
+                )
+
+                # ----------------------------------
+                # STRUCTURED ROBOT CONTEXT
+                # ----------------------------------
+                robot_context = f"""
+CURRENT ROBOTICS CONTEXT
+
+Category:
+{category}
+
+Controller:
+{controller}
+
+Exercise:
+{exercise}
+
+Programming Environment:
+Arduino / C++
+
+IMPORTANT:
+Use ONLY hardware information and programming interfaces
+supported by the provided Knowledge Base.
+
+Do not invent pins, libraries, sensor thresholds,
+motor functions or hardware capabilities.
+"""
+
+                # ----------------------------------
+                # STORE USER MESSAGE WITH CONTEXT
+                # ----------------------------------
+                contextual_user_message = f"""
+{robot_context}
+
+STUDENT REQUEST:
+{user_input}
+"""
+
+                st.session_state.chat_history.append(
+                    {
+                        "role": "user",
+                        "content": contextual_user_message
+                    }
+                )
+
+                with st.spinner("Ανάλυση αγωνιστικού ρομπότ..."):
+
+                    try:
+
+                        # ==================================
+                        # 1. L1-L5 CLASSIFICATION
+                        # ==================================
+                        class_sys = f"""
+You are an educational researcher studying
+student interactions in competitive robotics.
+
+Classify the student's request into exactly
+one level using ONLY the following rubric:
+
+{my_rubric}
+
+Consider the competitive robotics context.
+
+Return ONLY:
+
+L1
+L2
+L3
+L4
+or
+L5
+"""
+
+                        class_res = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": class_sys
+                                },
+                                {
+                                    "role": "user",
+                                    "content": contextual_user_message
+                                }
+                            ]
+                        )
+
+                        auto_level = (
+                            class_res
+                            .choices[0]
+                            .message
+                            .content
+                            .strip()
+                        )
+
+                        # ==================================
+                        # 2. CODE GENERATION
+                        # ==================================
+                        code_sys = f"""
+{my_behavior}
+
+==================================================
+TECHNICAL KNOWLEDGE BASE
+==================================================
+
+{my_knowledge}
+
+==================================================
+CURRENT ROBOT CONFIGURATION
+==================================================
+
+{robot_context}
+
+==================================================
+CODE GENERATION RULES
+==================================================
+
+Generate Arduino C/C++ code appropriate for
+the selected competitive robotics configuration.
+
+Use the real motor-control library described
+in the Knowledge Base when applicable.
+
+For:
+
+Custom Nano + TB6612
+use the Ironbrick library interface.
+
+For:
+
+XMotion
+use the xmotionV3 library interface.
+
+Do NOT invent functions.
+
+Do NOT invent pin assignments.
+
+Do NOT invent sensor thresholds.
+
+If the student's request does not provide enough
+technical information to safely generate specific
+sensor code, do not invent missing hardware values.
+
+Output ONLY Arduino C/C++ code.
+
+No Markdown code blocks.
+
+No introductory text.
+
+No explanation outside the code.
+"""
+
+                        code_res = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": code_sys
+                                }
+                            ] + st.session_state.chat_history
+                        )
+
+                        raw_output = (
+                            code_res
+                            .choices[0]
+                            .message
+                            .content
+                            .strip()
+                        )
+
+                        clean_code = re.sub(
+                            r'```(?:cpp|c\+\+|c|arduino|)?',
+                            '',
+                            raw_output,
+                            flags=re.IGNORECASE
+                        ).replace(
+                            '```',
+                            ''
+                        ).strip()
+
+                        # ==================================
+                        # DISPLAY CODE
+                        # ==================================
+                        st.markdown(
+                            f"### Κώδικας — {category}"
+                        )
+
+                        st.caption(
+                            f"{controller} | {exercise} | Επίπεδο: {auto_level}"
+                        )
+
+                        st.code(
+                            clean_code,
+                            language="cpp"
+                        )
+
+                        # ==================================
+                        # 3. PEDAGOGICAL HELP
+                        # ==================================
+                        with st.expander(
+                            "Βοήθεια / Ανάλυση",
+                            expanded=True
+                        ):
+
+                            if mode == "Διόρθωση":
+
+                                help_sys = f"""
+{my_behavior}
+
+You are a competitive robotics educator.
+
+The student requested debugging/correction.
+
+Context:
+
+{robot_context}
+
+Explain in Greek:
+
+1. Where the problem is.
+2. Why it affects the robot.
+3. What was changed.
+4. What physical robot behavior is expected
+   after the correction.
+
+Distinguish clearly between:
+
+- programming error
+- sensor problem
+- motor-control problem
+- strategy problem
+- possible physical/mechanical behavior
+
+Do not claim that physical behavior has been
+experimentally verified unless such evidence exists.
+"""
+
+                            else:
+
+                                help_sys = f"""
+{my_behavior}
+
+You are a competitive robotics educator.
+
+Context:
+
+{robot_context}
+
+Explain briefly in Greek:
+
+1. What the generated algorithm does.
+2. How sensor information affects decisions.
+3. How the commands affect robot movement.
+4. How this relates to competitive strategy.
+
+Give one useful educational suggestion.
+
+Do not invent hardware characteristics.
+"""
+
+                            help_res = client.chat.completions.create(
+                                model="llama-3.3-70b-versatile",
+                                messages=[
+                                    {
+                                        "role": "system",
+                                        "content": help_sys
+                                    },
+                                    {
+                                        "role": "user",
+                                        "content": f"""
+Student request:
+
+{user_input}
+
+Generated code:
+
+{clean_code}
+"""
+                                    }
+                                ]
+                            )
+
+                            st.write(
+                                help_res
+                                .choices[0]
+                                .message
+                                .content
+                            )
+
+                        # ==================================
+                        # 4. GOOGLE SHEET LOGGING
+                        # ==================================
+                        if DB_URL:
+
+                            exercise_id = exercise.split(" - ")[0]
+
+                            requests.post(
+                                DB_URL,
+                                json={
+                                    "data": [
+                                        {
+                                            "Timestamp": str(
+                                                datetime.datetime.now()
+                                            ),
+                                            "Student_ID": student_id,
+                                            "Action": mode,
+                                            "Coding_Level": auto_level,
+                                            "Category": category,
+                                            "Controller": controller,
+                                            "Exercise_ID": exercise_id,
+                                            "Prompt": user_input,
+                                            "Code": clean_code.replace(
+                                                '"',
+                                                "'"
+                                            )
+                                        }
+                                    ]
+                                }
+                            )
+
+                    except Exception as e:
+
+                        st.error(
+                            f"Error: {e}"
+                        )
