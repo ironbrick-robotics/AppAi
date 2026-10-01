@@ -1320,7 +1320,7 @@ elif st.session_state.user_role == "tutor":
     try:
         if "GROQ_API_KEY" in st.secrets:
             client = OpenAI(
-                base_url="https://api.groq.com/openai/v1",
+               base_url="https://api.groq.com/openai/v1",
                 api_key=st.secrets["GROQ_API_KEY"]
             )
 
@@ -1672,7 +1672,7 @@ L5
 """
 
                         class_res = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
+                            model="openai/gpt-oss-120b",
                             messages=[
                                 {
                                     "role": "system",
@@ -1784,7 +1784,7 @@ NEED_MORE_INFORMATION
 """
 
                         code_res = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
+                            model="openai/gpt-oss-120b",
                             messages=[
                                 {
                                     "role": "system",
@@ -1943,7 +1943,7 @@ Generated result:
 """
 
                             help_res = client.chat.completions.create(
-                                model="llama-3.3-70b-versatile",
+                                model="openai/gpt-oss-120b",
                                 messages=[
                                     {
                                         "role": "system",
