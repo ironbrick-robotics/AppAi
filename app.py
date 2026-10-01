@@ -1284,6 +1284,19 @@ if st.session_state.user_role == "admin":
                     else:
                         st.warning("Συμπληρώστε το νέο όνομα της κατηγορίας.")
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ==========================================
 # 3. ΠΕΡΙΒΑΛΛΟΝ TUTOR (AI_AGENT - ΚΛΕΙΔΩΜΕΝΟ)
 # ==========================================
@@ -1333,7 +1346,6 @@ elif st.session_state.user_role == "tutor":
     # PRE TEST
     # ------------------------------------------
     with tab_pre:
-
         st.subheader("Αρχική Αξιολόγηση")
 
         pre_test_url = "https://forms.gle/wHkXG48y6xwWJV929"
@@ -1348,7 +1360,6 @@ elif st.session_state.user_role == "tutor":
     # POST TEST
     # ------------------------------------------
     with tab_post:
-
         st.subheader("Τελική Αξιολόγηση")
 
         post_test_url = "https://forms.gle/V5AW1eTAFRHEiaBs5"
@@ -1363,7 +1374,6 @@ elif st.session_state.user_role == "tutor":
     # EXERCISES
     # ------------------------------------------
     with tab_exercises:
-
         st.subheader("Ασκήσεις Αθλητικής Ρομποτικής")
 
         st.text_area(
@@ -1384,7 +1394,6 @@ elif st.session_state.user_role == "tutor":
         col_r, col_k, col_b = st.columns(3)
 
         with col_r:
-
             st.subheader("Rubric (L1-L5)")
 
             st.text_area(
@@ -1398,7 +1407,6 @@ elif st.session_state.user_role == "tutor":
             )
 
         with col_k:
-
             st.subheader("Competitive Robotics Knowledge Base")
 
             st.text_area(
@@ -1412,7 +1420,6 @@ elif st.session_state.user_role == "tutor":
             )
 
         with col_b:
-
             st.subheader("Tutor Behavior")
 
             st.text_area(
@@ -1456,57 +1463,69 @@ elif st.session_state.user_role == "tutor":
                 )
 
                 # ----------------------------------
-                # CONTROLLER
+                # ROBOT
                 # ----------------------------------
                 if category == "Mini Sumo":
-
-                    controller_options = [
+                    robot_options = [
                         "Custom Nano + TB6612",
                         "XMotion"
                     ]
-
                 else:
-
-                    controller_options = [
+                    robot_options = [
                         "Custom Nano + TB6612"
                     ]
 
-                controller = st.selectbox(
-                    "Controller:",
-                    controller_options
+                robot = st.selectbox(
+                    "Robot:",
+                    robot_options
+                )
+
+                # ----------------------------------
+                # WORK TYPE
+                # ----------------------------------
+                work_type = st.selectbox(
+                    "Τύπος εργασίας:",
+                    [
+                        "Ελεύθερη αλληλεπίδραση",
+                        "Οργανωμένη άσκηση"
+                    ]
                 )
 
                 # ----------------------------------
                 # EXERCISE
                 # ----------------------------------
-                if category == "Mini Sumo":
+                exercise = "FREE"
 
-                    exercise_options = [
-                        "MS-01 - Opponent Detection",
-                        "MS-02 - Basic Attack",
-                        "MS-03 - Ring Edge Detection",
-                        "MS-04 - Edge Avoidance",
-                        "MS-05 - Search Strategy",
-                        "MS-06 - Search, Attack and Escape",
-                        "MS-07 - Debugging Mini Sumo Strategy"
-                    ]
+                if work_type == "Οργανωμένη άσκηση":
 
-                else:
+                    if category == "Mini Sumo":
 
-                    exercise_options = [
-                        "LF-01 - Line Detection",
-                        "LF-02 - Basic Motor Correction",
-                        "LF-03 - Two-Sensor Line Following",
-                        "LF-04 - Speed and Stability",
-                        "LF-05 - Proportional Control",
-                        "LF-06 - PD/PID Line Following",
-                        "LF-07 - Debugging Line-Following Algorithm"
-                    ]
+                        exercise_options = [
+                            "MS-01 - Opponent Detection",
+                            "MS-02 - Basic Attack",
+                            "MS-03 - Ring Edge Detection",
+                            "MS-04 - Edge Avoidance",
+                            "MS-05 - Search Strategy",
+                            "MS-06 - Search, Attack and Escape",
+                            "MS-07 - Debugging Mini Sumo Strategy"
+                        ]
 
-                exercise = st.selectbox(
-                    "Άσκηση:",
-                    exercise_options
-                )
+                    else:
+
+                        exercise_options = [
+                            "LF-01 - Line Detection",
+                            "LF-02 - Basic Motor Correction",
+                            "LF-03 - Two-Sensor Line Following",
+                            "LF-04 - Speed and Stability",
+                            "LF-05 - Proportional Control",
+                            "LF-06 - PD/PID Line Following",
+                            "LF-07 - Debugging Line-Following Algorithm"
+                        ]
+
+                    exercise = st.selectbox(
+                        "Άσκηση:",
+                        exercise_options
+                    )
 
                 # ----------------------------------
                 # ACTION
@@ -1525,8 +1544,11 @@ elif st.session_state.user_role == "tutor":
                 # ----------------------------------
                 user_input = st.text_area(
                     "Κείμενο:",
-                    height=150,
-                    placeholder="Περιέγραψε τι θέλεις να κάνει το ρομπότ ή το πρόβλημα που αντιμετωπίζεις..."
+                    height=180,
+                    placeholder=(
+                        "Περιέγραψε τι θέλεις να κάνει το ρομπότ "
+                        "ή το πρόβλημα που αντιμετωπίζεις..."
+                    )
                 )
 
                 btn = st.form_submit_button(
@@ -1541,7 +1563,7 @@ elif st.session_state.user_role == "tutor":
             if btn and user_input:
 
                 # ----------------------------------
-                # LOAD KNOWLEDGE
+                # LOAD RESEARCH FILES
                 # ----------------------------------
                 my_rubric = load_research_file(
                     "rubric.txt",
@@ -1559,6 +1581,14 @@ elif st.session_state.user_role == "tutor":
                 )
 
                 # ----------------------------------
+                # EXERCISE ID
+                # ----------------------------------
+                if work_type == "Οργανωμένη άσκηση":
+                    exercise_id = exercise.split(" - ")[0]
+                else:
+                    exercise_id = "FREE"
+
+                # ----------------------------------
                 # STRUCTURED ROBOT CONTEXT
                 # ----------------------------------
                 robot_context = f"""
@@ -1567,11 +1597,14 @@ CURRENT ROBOTICS CONTEXT
 Category:
 {category}
 
-Controller:
-{controller}
+Robot:
+{robot}
+
+Work Type:
+{work_type}
 
 Exercise:
-{exercise}
+{exercise_id}
 
 Programming Environment:
 Arduino / C++
@@ -1580,12 +1613,17 @@ IMPORTANT:
 Use ONLY hardware information and programming interfaces
 supported by the provided Knowledge Base.
 
-Do not invent pins, libraries, sensor thresholds,
-motor functions or hardware capabilities.
+Do not invent:
+- pins
+- libraries
+- sensor thresholds
+- motor functions
+- hardware capabilities
+- competition rules
 """
 
                 # ----------------------------------
-                # STORE USER MESSAGE WITH CONTEXT
+                # MESSAGE FOR THIS INTERACTION
                 # ----------------------------------
                 contextual_user_message = f"""
 {robot_context}
@@ -1617,9 +1655,13 @@ one level using ONLY the following rubric:
 
 {my_rubric}
 
-Consider the competitive robotics context.
+Use the student's actual request as the main
+basis for classification.
 
-Return ONLY:
+The selected exercise must NOT determine the
+classification level.
+
+Return ONLY one label:
 
 L1
 L2
@@ -1670,24 +1712,50 @@ CURRENT ROBOT CONFIGURATION
 {robot_context}
 
 ==================================================
+IMPORTANT PEDAGOGICAL RULE
+==================================================
+
+Before changing code, consider whether the student's
+problem is necessarily caused by software.
+
+In competitive robotics, unexpected behavior may
+also result from:
+
+- motor differences
+- mechanical friction
+- wheel traction
+- battery condition
+- wiring
+- sensor behavior
+- motor driver behavior
+- physical construction
+
+Do not automatically compensate for a physical
+problem by changing motor PWM.
+
+If the cause cannot be determined from the supplied
+information, preserve that uncertainty.
+
+==================================================
 CODE GENERATION RULES
 ==================================================
 
-Generate Arduino C/C++ code appropriate for
-the selected competitive robotics configuration.
+Generate Arduino C/C++ code appropriate for the
+selected robot configuration.
 
-Use the real motor-control library described
-in the Knowledge Base when applicable.
-
-For:
+If Robot is:
 
 Custom Nano + TB6612
-use the Ironbrick library interface.
 
-For:
+use the Ironbrick library interface described in
+the Knowledge Base.
+
+If Robot is:
 
 XMotion
-use the xmotionV3 library interface.
+
+use the xmotionV3 library interface described in
+the Knowledge Base.
 
 Do NOT invent functions.
 
@@ -1695,17 +1763,24 @@ Do NOT invent pin assignments.
 
 Do NOT invent sensor thresholds.
 
-If the student's request does not provide enough
-technical information to safely generate specific
-sensor code, do not invent missing hardware values.
+Do NOT invent missing hardware information.
+
+When the student's request is a correction, preserve
+as much of the student's existing code structure as
+possible.
+
+If sufficient information exists to produce code:
 
 Output ONLY Arduino C/C++ code.
 
 No Markdown code blocks.
-
 No introductory text.
-
 No explanation outside the code.
+
+If sufficient technical information does NOT exist,
+output exactly:
+
+NEED_MORE_INFORMATION
 """
 
                         code_res = client.chat.completions.create(
@@ -1737,20 +1812,30 @@ No explanation outside the code.
                         ).strip()
 
                         # ==================================
-                        # DISPLAY CODE
+                        # DISPLAY
                         # ==================================
                         st.markdown(
-                            f"### Κώδικας — {category}"
+                            f"### Απάντηση — {category}"
                         )
 
                         st.caption(
-                            f"{controller} | {exercise} | Επίπεδο: {auto_level}"
+                            f"{robot} | {exercise_id} | Επίπεδο: {auto_level}"
                         )
 
-                        st.code(
-                            clean_code,
-                            language="cpp"
-                        )
+                        if clean_code == "NEED_MORE_INFORMATION":
+
+                            st.warning(
+                                "Δεν υπάρχουν ακόμη αρκετές τεχνικές "
+                                "πληροφορίες για ασφαλή παραγωγή συγκεκριμένου "
+                                "κώδικα. Δες την ανάλυση παρακάτω."
+                            )
+
+                        else:
+
+                            st.code(
+                                clean_code,
+                                language="cpp"
+                            )
 
                         # ==================================
                         # 3. PEDAGOGICAL HELP
@@ -1767,30 +1852,50 @@ No explanation outside the code.
 
 You are a competitive robotics educator.
 
-The student requested debugging/correction.
-
-Context:
+CURRENT CONTEXT:
 
 {robot_context}
 
-Explain in Greek:
+The student reports a problem or requests
+a correction.
 
-1. Where the problem is.
-2. Why it affects the robot.
-3. What was changed.
-4. What physical robot behavior is expected
-   after the correction.
+Respond in Greek.
 
-Distinguish clearly between:
+Your task is NOT to assume immediately that
+the problem is caused by code.
 
-- programming error
-- sensor problem
-- motor-control problem
-- strategy problem
-- possible physical/mechanical behavior
+Analyze the available evidence.
 
-Do not claim that physical behavior has been
-experimentally verified unless such evidence exists.
+Consider separately:
+
+1. Program logic
+2. Motor commands
+3. Sensors
+4. Motor driver
+5. Wiring
+6. Motors
+7. Wheels / traction
+8. Mechanical friction
+9. Power / battery
+10. Competition strategy
+
+Explain:
+
+- what can be concluded from the information,
+- what cannot yet be concluded,
+- what the student should check,
+- and why.
+
+If a software correction is justified, explain
+what should change.
+
+If the evidence is insufficient, ask for the
+specific information required to continue.
+
+Do not invent measurements or test results.
+
+Do not claim that a physical cause has been
+confirmed unless it has actually been tested.
 """
 
                             else:
@@ -1800,20 +1905,41 @@ experimentally verified unless such evidence exists.
 
 You are a competitive robotics educator.
 
-Context:
+CURRENT CONTEXT:
 
 {robot_context}
 
-Explain briefly in Greek:
+Respond in Greek.
 
-1. What the generated algorithm does.
-2. How sensor information affects decisions.
-3. How the commands affect robot movement.
-4. How this relates to competitive strategy.
+Explain the student's request using the relationship:
 
-Give one useful educational suggestion.
+SENSOR / INPUT
+→ DECISION
+→ ALGORITHM
+→ MOTOR COMMAND
+→ PHYSICAL ROBOT BEHAVIOR
+→ COMPETITION STRATEGY
+
+If code has been generated, explain briefly
+what it does.
+
+If code could not safely be generated, explain
+which technical information is missing.
+
+Give guidance that helps the student understand
+the problem rather than simply providing an answer.
 
 Do not invent hardware characteristics.
+"""
+
+                            help_user_content = f"""
+Student request:
+
+{user_input}
+
+Generated result:
+
+{clean_code}
 """
 
                             help_res = client.chat.completions.create(
@@ -1825,32 +1951,24 @@ Do not invent hardware characteristics.
                                     },
                                     {
                                         "role": "user",
-                                        "content": f"""
-Student request:
-
-{user_input}
-
-Generated code:
-
-{clean_code}
-"""
+                                        "content": help_user_content
                                     }
                                 ]
                             )
 
-                            st.write(
+                            help_text = (
                                 help_res
                                 .choices[0]
                                 .message
                                 .content
                             )
 
+                            st.write(help_text)
+
                         # ==================================
                         # 4. GOOGLE SHEET LOGGING
                         # ==================================
                         if DB_URL:
-
-                            exercise_id = exercise.split(" - ")[0]
 
                             requests.post(
                                 DB_URL,
@@ -1864,12 +1982,13 @@ Generated code:
                                             "Action": mode,
                                             "Coding_Level": auto_level,
                                             "Category": category,
-                                            "Controller": controller,
+                                            "Robot": robot,
                                             "Exercise_ID": exercise_id,
                                             "Prompt": user_input,
-                                            "Code": clean_code.replace(
-                                                '"',
-                                                "'"
+                                            "Code": (
+                                                ""
+                                                if clean_code == "NEED_MORE_INFORMATION"
+                                                else clean_code.replace('"', "'")
                                             )
                                         }
                                     ]
