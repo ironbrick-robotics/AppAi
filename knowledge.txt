@@ -1,7 +1,168 @@
-OFFICIAL DOCUMENTATION:
-https://microbit-micropython.readthedocs.io/en/v2-docs/
-https://github.com/ThomasDuvinage/DFRobot-Maqueenplus-Python
+COMPETITIVE ROBOTICS KNOWLEDGE BASE
 
-- Use MicroPython v2 (sleep, display, speaker).
-- Use maqueenPlusV2 or maqueen library as needed.
-- Always include: from microbit import *
+GENERAL
+
+The learning environment concerns Competitive / Sports Robotics.
+
+The main robotics categories supported by the Tutor are:
+- Mini Sumo
+- Line Following
+- Robot Football
+- Humanoid Robotics
+
+The Tutor must always consider the selected robotics category, robot, and exercise before generating or correcting code.
+
+The Tutor must not assume hardware, sensors, motor drivers, pin assignments, libraries, programming language, or robot specifications that are not explicitly defined in the available technical information.
+
+If essential technical information is missing, the Tutor must state what information is required instead of inventing hardware details.
+
+
+MINI_SUMO
+
+Main concepts:
+- opponent detection
+- ring edge detection
+- differential drive
+- search strategy
+- attack strategy
+- escape / edge avoidance strategy
+- sensor-based decision making
+- motor speed control
+- robot state and strategy logic
+
+Typical functional structure:
+1. Search for the opponent.
+2. Detect the opponent.
+3. Move toward and attack the opponent.
+4. Continuously monitor the edge of the dohyo.
+5. Give edge avoidance priority when necessary.
+6. Return to searching or attacking after the avoidance action.
+
+Important:
+The exact sensors, thresholds, motor commands, pins, libraries and hardware depend on the selected robot.
+
+
+LINE_FOLLOWER
+
+Main concepts:
+- line detection
+- sensor readings
+- differential drive
+- left/right correction
+- speed control
+- proportional control
+- PD/PID control
+- intersections
+- route detection
+- calibration
+
+The Tutor must distinguish between simple line-following logic and advanced PD/PID control.
+
+Exact sensor values and motor commands depend on the selected robot.
+
+
+ROBOT_FOOTBALL
+
+Main concepts:
+- ball detection
+- robot orientation
+- movement toward the ball
+- differential or omnidirectional movement
+- attack strategy
+- defensive strategy
+- goal detection
+- sensor fusion
+- motor control
+
+The Tutor must not assume that a specific ball sensor, camera, compass or drive system exists unless it is defined for the selected robot.
+
+
+HUMANOID ROBOTICS
+
+Main concepts:
+- movement sequences
+- balance
+- servo control
+- predefined actions
+- sensor-based behavior
+- walking
+- turning
+- object or ball interaction
+- competition strategy
+
+Exact servo commands, libraries and movement functions depend on the selected humanoid platform.
+
+
+PROGRAMMING AND ALGORITHMIC THINKING
+
+Important concepts include:
+- variables
+- conditions
+- loops
+- functions
+- sensor readings
+- actuator control
+- state-based logic
+- debugging
+- parameter tuning
+- algorithms
+- decision making
+
+The generated solution must correspond to the hardware and programming environment of the selected robot.
+
+
+SENSORS
+
+Sensors may be used for:
+- opponent detection
+- line detection
+- distance measurement
+- orientation
+- ball detection
+- light or color detection
+- robot state estimation
+
+The Tutor must not invent sensor types or threshold values.
+
+
+MOTORS AND ACTUATORS
+
+Possible actuators include:
+- DC motors
+- servo motors
+- brushless motors
+- other platform-specific actuators
+
+Motor control commands must correspond to the selected robot and its actual hardware.
+
+
+STRATEGY
+
+Competitive robotics programming is not limited to individual motor commands.
+
+A strategy may combine:
+- sensing
+- decision making
+- movement
+- priority rules
+- state transitions
+- timing
+- recovery behavior
+
+The Tutor should help the student understand why a strategy works and how changes affect robot behavior.
+
+
+COMPETITION
+
+Solutions should consider that competition robots operate in dynamic environments.
+
+Important factors may include:
+- speed
+- accuracy
+- stability
+- reaction time
+- sensor reliability
+- mechanical limitations
+- competition rules
+
+Competition rules and technical limits must not be invented. They must be supplied by the available documentation or by the user.
