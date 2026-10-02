@@ -1317,7 +1317,7 @@ if st.session_state.user_role == "admin":
 
 
 
-# ------------------------------------------
+    # ------------------------------------------
     # ΣΕΛΙΔΑ: ΧΡΕΩΣΕΙΣ ΡΟΜΠΟΤ - ΜΑΘΗΤΗ (db_charges)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_charges":
@@ -1364,9 +1364,12 @@ if st.session_state.user_role == "admin":
             extra_qtys_dict = {}
             if extra_selected:
                 st.write("Ορίστε ποσότητες για τα extra:")
-                for ex in extra_selected:
-                    extra_qtys_dict[ex] = st.number_input(f"Τεμάχια για {ex}", min_value=1, step=1, value=1, key=f"ch_ex_{ex}")
-
+                cols_ch_ex = st.columns(2)
+                for idx, ex in enumerate(extra_selected):
+                    with cols_ch_ex[idx % 2]:
+                        extra_qtys_dict[ex] = st.number_input(f"Τεμάχια για {ex}", min_value=1, step=1, value=1, key=f"ch_ex_{ex}")
+            
+            st.markdown("<br>", unsafe_allow_html=True)
             charge_submit = st.button("Οριστική Καταχώριση Χρέωσης", type="primary", use_container_width=True)
 
             if charge_submit:
@@ -1376,9 +1379,15 @@ if st.session_state.user_role == "admin":
                         ch_records = get_charges_records()
                         next_ch_id = len(ch_records) + 1 if ch_records else 1
 
-                        extra_str = ", ".join([f"{k}:{v}" for k, v in extra_qtys_dict.items()]) if extra_selected else "Κανένα"
+                        # Δημιουργία καθαρού string για τα extra items
+                        if extra_selected:
+                            extra_str = ", ".join([f"{k}:{v}" for k, v in extra_qtys_dict.items()])
+                        else:
+                            extra_str = "Κανένα"
+
                         date_str = str(datetime.date.today())
 
+                        # Ακριβής σειρά 7 στηλών: charge_id, student_name, item_type, item_details, extra_items, charge_date, status
                         ch_sheet.append_row([
                             next_ch_id,
                             student_name.strip(),
@@ -1388,7 +1397,7 @@ if st.session_state.user_role == "admin":
                             date_str,
                             "Χρεωμένο"
                         ])
-                        st.success(f"Η χρέωση στον μαθητή '{student_name.strip()}' καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων».")
+                        st.success(f"Η χρέωση στον μαθητή '{student_name.strip()}' καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης χρέωσης: {e}")
                 else:
@@ -1420,11 +1429,12 @@ if st.session_state.user_role == "admin":
                             row_to_up = chosen_charge["row_index"]
                             # Στήλη 7: status
                             ch_sheet.update_cell(row_to_up, 7, "Επιστράφηκε")
-                            st.success("Η επιστροφή καταχωρήθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων».")
+                            st.success("Η επιστροφή καταχωρήθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                         except Exception as e:
                             st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
             except Exception as e:
                 st.error(f"Σφάλμα φόρτωσης χρεώσεων: {e}")
+
 
 
 # ==========================================
