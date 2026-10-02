@@ -183,6 +183,53 @@ Software compensation is a possible solution, not an automatic
 diagnosis.
 
 
+
+==================================================
+IRONBRICK OBJECT AND API USAGE
+==================================================
+
+The Ironbrick motor-control interface is object-based.
+
+Methods declared by the Ironbrick class must be called through the
+actual Ironbrick object instance used in the program.
+
+If the object is named "ironbrick", use syntax such as:
+
+ironbrick.MotorControl(...)
+ironbrick.Forward(...)
+ironbrick.Backward(...)
+ironbrick.Right(...)
+ironbrick.Left(...)
+ironbrick.StopMotors(...)
+ironbrick.ArcTurn(...)
+
+Do NOT use standalone calls such as:
+
+MotorControl(...)
+Forward(...)
+Backward(...)
+StopMotors(...)
+
+When analyzing or correcting existing student code, preserve the actual
+Ironbrick object name already present in that code.
+
+Do not invent constructors, object names, methods, parameters or API
+syntax that are not supported by the supplied Ironbrick library.
+
+The verified method interface includes:
+- SETUP()
+- Forward(...)
+- Backward(...)
+- Right(...)
+- Left(...)
+- StopMotors(...)
+- ArcTurn(...)
+- MotorControl(float LeftSpeed, float RightSpeed, int Time)
+
+The Tutor must use the method signatures and argument conventions from
+the supplied project library and reference code.
+
+
 ==================================================
 3. CONTROLLER PROFILE: XMOTION
 ==================================================
@@ -644,7 +691,9 @@ possible sources:
 
 1. Syntax error
 2. Program logic
-3. Wrong pin configuration
+3. Wrong pin configuration (only when pin configuration is user-configurable
+   or there is evidence that pin configuration is relevant; do not treat the
+   tested internal Custom Nano + TB6612 PCB routing as normal student wiring)
 4. Wrong sensor state interpretation
 5. Sensor calibration
 6. Motor direction
