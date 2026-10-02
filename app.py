@@ -243,6 +243,17 @@ if st.session_state.user_role == "admin":
             l_records = get_loans_records()
             r_records = get_robots_records()
             
+            # Δημιουργία μοναδικών, ταξινομημένων λιστών για τα φίλτρα
+            all_categories = sorted(list(set([str(pr.get("product_company", pr.get("Company", ""))).strip() for pr in p_records if str(pr.get("product_company", pr.get("Company", ""))).strip()])))
+            all_subcategories = sorted(list(set([str(pr.get("product_subcategory", pr.get("Subcategory", ""))).strip() for pr in p_records if str(pr.get("product_subcategory", pr.get("Subcategory", ""))).strip()])))
+
+            # Φίλτρα αναζήτησης στην κορυφή
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                selected_filter_cat = st.selectbox("Φίλτρο ανά Κατηγορία", options=["Όλες οι Κατηγορίες"] + all_categories)
+            with col_f2:
+                selected_filter_sub = st.selectbox("Φίλτρο ανά Υποκατηγορία", options=["Όλες οι Υποκατηγορίες"] + all_subcategories)
+
             broken_map = {}
             for br in b_records:
                 b_id = str(br.get("broken_id", br.get("ID", ""))).strip()
@@ -311,9 +322,16 @@ if st.session_state.user_role == "admin":
             if p_records:
                 table_data = []
                 for pr in p_records:
-                    p_id = str(pr.get("product_id", pr.get("Product ID", pr.get("id", "")))).strip()
                     p_comp = str(pr.get("product_company", pr.get("Company", ""))).strip()
                     p_sub = str(pr.get("product_subcategory", pr.get("Subcategory", ""))).strip()
+
+                    # Έλεγχος φίλτρων
+                    if selected_filter_cat != "Όλες οι Κατηγορίες" and p_comp != selected_filter_cat:
+                        continue
+                    if selected_filter_sub != "Όλες οι Υποκατηγορίες" and p_sub != selected_filter_sub:
+                        continue
+
+                    p_id = str(pr.get("product_id", pr.get("Product ID", pr.get("id", "")))).strip()
                     p_name = str(pr.get("product_name", pr.get("Name", ""))).strip()
                     
                     p_qty = 0
@@ -348,8 +366,11 @@ if st.session_state.user_role == "admin":
                         pass
                     return [''] * len(row)
 
-                styled_df = df_products.style.apply(highlight_empty, axis=1)
-                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                if not df_products.empty:
+                    styled_df = df_products.style.apply(highlight_empty, axis=1)
+                    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("Δεν βρέθηκαν προϊόντα με βάση τα φίλτρα που επιλέξατε.")
             else:
                 st.info("Η καρτέλα db_products είναι προς το παρόν άδεια.")
         except Exception as e:
