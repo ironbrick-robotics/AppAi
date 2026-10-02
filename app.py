@@ -1745,6 +1745,72 @@ elif st.session_state.user_role == "tutor":
                 )
 
                 # ----------------------------------
+                # SELECTIVE KNOWLEDGE CONTEXT
+                # ----------------------------------
+                def get_knowledge_section(text, section_number):
+                    marker = f"{section_number}. "
+                    lines = text.splitlines()
+                    start_index = None
+
+                    for i, line in enumerate(lines):
+                        if line.strip().startswith(marker):
+                            start_index = i
+                            break
+
+                    if start_index is None:
+                        return ""
+
+                    end_index = len(lines)
+
+                    for i in range(start_index + 1, len(lines)):
+                        stripped = lines[i].strip()
+                        if stripped and ". " in stripped:
+                            prefix = stripped.split(". ", 1)[0]
+                            if prefix.isdigit():
+                                end_index = i
+                                break
+
+                    return "\\n".join(lines[start_index:end_index]).strip()
+
+
+                def build_relevant_knowledge(full_knowledge, category, robot):
+                    # Always include the programming environment.
+                    section_ids = [1]
+
+                    # Include only the selected robot/controller profile.
+                    if robot == "Custom Nano + TB6612":
+                        section_ids.append(2)
+                    elif robot == "XMotion":
+                        section_ids.append(3)
+
+                    if category == "Mini Sumo":
+                        section_ids.extend([
+                            4, 5, 6, 7, 9, 10, 11, 12, 13, 15, 16, 17
+                        ])
+                    elif category == "Line Follower":
+                        section_ids.extend([
+                            4, 5, 8, 14, 15, 16, 17
+                        ])
+
+                    selected = []
+                    for section_id in section_ids:
+                        section = get_knowledge_section(
+                            full_knowledge,
+                            section_id
+                        )
+                        if section:
+                            selected.append(section)
+
+                    return "\\n\\n".join(selected)
+
+
+                relevant_knowledge = build_relevant_knowledge(
+                    my_knowledge,
+                    category,
+                    robot
+                )
+
+                # ----------------------------------
                 # EXERCISE ID
                 # ----------------------------------
                 if work_type == "Οργανωμένη άσκηση":
@@ -1874,7 +1940,7 @@ L5
 TECHNICAL KNOWLEDGE BASE
 ==================================================
 
-{my_knowledge}
+{relevant_knowledge}
 
 ==================================================
 CURRENT ROBOT CONFIGURATION
