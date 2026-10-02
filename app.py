@@ -56,28 +56,35 @@ def get_loans_records():
 def get_robots_records():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_robots").get_all_records()
-
+@st.cache_data(ttl=60)
 def get_products_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_products")
-
+@st.cache_data(ttl=60)
 def get_company_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("DB_Company")
-
+@st.cache_data(ttl=60)
 def get_broken_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_broken")
-
+@st.cache_data(ttl=60)
 def get_loans_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_loans")
-
+@st.cache_data(ttl=60)
 def get_robots_sheet():
     client = get_gspread_client()
     return client.open("DB_ROBOTICS").worksheet("db_robots")
 
-
+@st.cache_data(ttl=60)
+def get_charges_records():
+    client = get_gspread_client()
+    return client.open("DB_ROBOTICS").worksheet("db_charges").get_all_records()
+@st.cache_data(ttl=60)
+def get_charges_sheet():
+    client = get_gspread_client()
+    return client.open("DB_ROBOTICS").worksheet("db_charges")
 # ==========================================
 # 1. ΣΥΣΤΗΜΑ LOGIN (ΑΣΦΑΛΕΙΑΣ) & PAGE STATE
 # ==========================================
@@ -189,7 +196,7 @@ if st.session_state.user_role == "admin":
                 st.session_state.admin_subpage = "loans"
                 st.rerun()
         with col_m2:
-            if st.button("✏️ Επεξεργασία Προϊόντος", use_container_width=True):
+            if st.button("✏️️ Επεξεργασία Προϊόντος", use_container_width=True):
                 st.session_state.admin_subpage = "edit"
                 st.rerun()
             if st.button("⚠️ Κατεστραμμένα", use_container_width=True):
@@ -197,12 +204,15 @@ if st.session_state.user_role == "admin":
                 st.rerun()
 
         st.markdown("---")
-        st.subheader("🤖 Ρομπότ")
+        st.subheader("🤖 Ρομπότ & Ταξίδια Διαγωνισμών")
 
         col_rob1, col_rob2 = st.columns(2)
         with col_rob1:
             if st.button("🤖 Κατασκευή Ρομπότ", use_container_width=True):
                 st.session_state.admin_subpage = "robot_build"
+                st.rerun()
+            if st.button("🎒 Χρέωσεις Ρομπότ - Μαθητή", use_container_width=True):
+                st.session_state.admin_subpage = "robot_charges"
                 st.rerun()
         with col_rob2:
             if st.button("✏️ Επεξεργασία Ρομπότ", use_container_width=True):
@@ -230,7 +240,6 @@ if st.session_state.user_role == "admin":
             if st.button("🤖 Λίστα ρομπότ", use_container_width=True):
                 st.session_state.admin_subpage = "robot_list"
                 st.rerun()
-
     # ------------------------------------------
     # ΣΕΛΙΔΑ Β: ΛΙΣΤΑ ΕΞΟΠΛΙΣΜΟΥ
     # ------------------------------------------
@@ -1308,15 +1317,114 @@ if st.session_state.user_role == "admin":
 
 
 
+# ------------------------------------------
+    # ΣΕΛΙΔΑ: ΧΡΕΩΣΕΙΣ ΡΟΜΠΟΤ - ΜΑΘΗΤΗ (db_charges)
+    # ------------------------------------------
+    elif st.session_state.admin_subpage == "robot_charges":
+        st.subheader("🎒 Χρέώσεις Εξοπλισμού & Ρομπότ σε Μαθητές (Ταξίδια Διαγωνισμών)")
 
+        tab_new_charge, tab_active_charges = st.tabs(["📝 Νέα Χρέωση", "↩️ Επιστροφή / Ενεργές Χρεώσεις"])
 
+        with tab_new_charge:
+            try:
+                r_records = get_robots_records()
+                p_records = get_products_records()
+            except Exception as e:
+                r_records, p_records = [], []
 
+            student_name = st.text_input("Ονοματεπώνυμο Μαθητή / Υπευθύνου (π.χ. Κ. Αργύρης)")
+            charge_choice_type = st.radio("Τύπος Χρέωσης", ["Έτοιμο Ρομπότ", "Μεμονωμένος Εξοπλισμός / Υλικό"], horizontal=True)
 
+            selected_item_details = ""
+            if charge_choice_type == "Έτοιμο Ρομπότ":
+                active_robots_build = [r for r in r_records if str(r.get("status", "Ενεργό")).strip() != "Διαλυμένο"]
+                if not active_robots_build:
+                    st.warning("Δεν υπάρχουν διαθέσιμα ενεργά ρομπότ.")
+                else:
+                    robot_map = {f"ID: {r.get('robot_id', r.get('ID',''))} | Ρομπότ: {r.get('robot_name', r.get('Robot Name',''))} (Χειριστής: {r.get('operator_name','')})": r for r in active_robots_build}
+                    sel_rob_label = st.selectbox("Επιλέξτε Ρομπότ", options=list(robot_map.keys()))
+                    chosen_r = robot_map[sel_rob_label]
+                    selected_item_details = f"Ρομπότ ID: {chosen_r.get('robot_id')} - Όνομα: {chosen_r.get('robot_name')} (Πλακέτα: {chosen_r.get('board')})"
+            else:
+                if not p_records:
+                    st.warning("Δεν βρέθηκαν προϊόντα στην αποθήκη.")
+                else:
+                    formatted_prods = [f"[{p.get('product_company','')} ] {p.get('product_name', p.get('Name',''))}" for p in p_records]
+                    formatted_prods = sorted(list(set(formatted_prods)))
+                    sel_p_label = st.selectbox("Επιλέξτε Προϊόν", options=formatted_prods)
+                    eq_qty = st.number_input("Ποσότητα", min_value=1, step=1, value=1)
+                    selected_item_details = f"Προϊόν: {sel_p_label} (x{eq_qty})"
 
+            st.markdown("---")
+            st.markdown("### 🔌 Επιπλέον Extra Υλικά (π.χ. Φορτιστής, Καλώδια, Laptop)")
+            
+            product_names_all = sorted(list(set([str(p.get("product_name", p.get("Name", ""))).strip() for p in p_records if str(p.get("product_name", p.get("Name", ""))).strip()])))
+            extra_selected = st.multiselect("Επιλέξτε επιπλέον εξοπλισμό αποσκευής", options=product_names_all, key="charge_extras")
+            
+            extra_qtys_dict = {}
+            if extra_selected:
+                st.write("Ορίστε ποσότητες για τα extra:")
+                for ex in extra_selected:
+                    extra_qtys_dict[ex] = st.number_input(f"Τεμάχια για {ex}", min_value=1, step=1, value=1, key=f"ch_ex_{ex}")
 
+            charge_submit = st.button("Οριστική Καταχώριση Χρέωσης", type="primary", use_container_width=True)
 
+            if charge_submit:
+                if student_name.strip() and selected_item_details:
+                    try:
+                        ch_sheet = get_charges_sheet()
+                        ch_records = get_charges_records()
+                        next_ch_id = len(ch_records) + 1 if ch_records else 1
 
+                        extra_str = ", ".join([f"{k}:{v}" for k, v in extra_qtys_dict.items()]) if extra_selected else "Κανένα"
+                        date_str = str(datetime.date.today())
 
+                        ch_sheet.append_row([
+                            next_ch_id,
+                            student_name.strip(),
+                            charge_choice_type,
+                            selected_item_details,
+                            extra_str,
+                            date_str,
+                            "Χρεωμένο"
+                        ])
+                        st.success(f"Η χρέωση στον μαθητή '{student_name.strip()}' καταγράφηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων».")
+                    except Exception as e:
+                        st.error(f"Σφάλμα αποθήκευσης χρέωσης: {e}")
+                else:
+                    st.warning("Συμπληρώστε το όνομα του μαθητή και επιλέξτε εξοπλισμό/ρομπότ.")
+
+        with tab_active_charges:
+            st.write("Ενεργές Χρεώσεις προς Μαθητές (Εκκρεμεί Επιστροφή):")
+            try:
+                ch_records = get_charges_records()
+                active_charges = []
+                for idx, r in enumerate(ch_records):
+                    status = str(r.get("status", r.get("Status", ""))).strip()
+                    if status == "Χρεωμένο":
+                        active_charges.append({"row_index": idx + 2, "data": r})
+
+                if not active_charges:
+                    st.info("Δεν υπάρχουν ενεργές χρεώσεις αυτή τη στιγμή.")
+                else:
+                    charge_options = {f"ID: {c['data'].get('charge_id', c['data'].get('ID',''))} | Μαθητής: {c['data'].get('student_name', c['data'].get('Student',''))} | Αντικείμενο: {c['data'].get('item_details', '')}": c for c in active_charges}
+
+                    sel_active_ch_label = st.selectbox("Επιλέξτε Χρέωση προς Επιστροφή", options=list(charge_options.keys()))
+                    chosen_charge = charge_options[sel_active_ch_label]
+
+                    return_charge_btn = st.button("Καταχώριση Επιστροφής Εξοπλισμού", type="primary", use_container_width=True)
+
+                    if return_charge_btn:
+                        try:
+                            ch_sheet = get_charges_sheet()
+                            row_to_up = chosen_charge["row_index"]
+                            # Στήλη 7: status
+                            ch_sheet.update_cell(row_to_up, 7, "Επιστράφηκε")
+                            st.success("Η επιστροφή καταχωρήθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων».")
+                        except Exception as e:
+                            st.error(f"Σφάλμα ενημέρωσης επιστροφής: {e}")
+            except Exception as e:
+                st.error(f"Σφάλμα φόρτωσης χρεώσεων: {e}")
 
 
 # ==========================================
