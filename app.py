@@ -1494,11 +1494,27 @@ elif st.session_state.user_role == "tutor":
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    # ------------------------------------------
+        # ------------------------------------------
     # TABS
     # ------------------------------------------
-    tab_ide, tab_config, tab_pre, tab_post, tab_exercises = st.tabs(
-        ["AppIDE", "Help", "Pre Test", "Post Test", "Exercises"]
+    (
+        tab_ide,
+        tab_config,
+        tab_pre,
+        tab_mid,
+        tab_post,
+        tab_final,
+        tab_exercises
+    ) = st.tabs(
+        [
+            "AppIDE",
+            "Help",
+            "Pre Test",
+            "Ενδιάμεση Αξιολόγηση",
+            "Post Test",
+            "Τελική Αξιολόγηση AI Mentor",
+            "Exercises"
+        ]
     )
 
     # ------------------------------------------
@@ -1516,6 +1532,24 @@ elif st.session_state.user_role == "tutor":
         )
 
     # ------------------------------------------
+    # ΕΝΔΙΑΜΕΣΗ ΑΞΙΟΛΟΓΗΣΗ
+    # ------------------------------------------
+    with tab_mid:
+        st.subheader("Ενδιάμεση Αξιολόγηση")
+
+        # Το Google Form θα προστεθεί όταν δημιουργηθεί.
+        mid_test_url = ""
+
+        if mid_test_url:
+            components.iframe(
+                mid_test_url,
+                height=800,
+                scrolling=True
+            )
+        else:
+            st.info("Η Ενδιάμεση Αξιολόγηση δεν είναι ακόμη διαθέσιμη.")
+
+    # ------------------------------------------
     # POST TEST
     # ------------------------------------------
     with tab_post:
@@ -1529,6 +1563,19 @@ elif st.session_state.user_role == "tutor":
             scrolling=True
         )
 
+    # ------------------------------------------
+    # ΤΕΛΙΚΗ ΑΞΙΟΛΟΓΗΣΗ AI MENTOR
+    # ------------------------------------------
+    with tab_final:
+        st.subheader("Τελική Αξιολόγηση AI Mentor")
+
+        final_evaluation_url = "https://forms.gle/bHvxHySazXdFe2yn7"
+
+        components.iframe(
+            final_evaluation_url,
+            height=800,
+            scrolling=True
+        )
     # ------------------------------------------
     # EXERCISES
     # ------------------------------------------
