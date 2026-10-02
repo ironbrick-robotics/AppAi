@@ -803,7 +803,8 @@ if st.session_state.user_role == "admin":
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_build":
         st.subheader("🤖 Κατασκευή Νέου Ρομπότ")
-
+        st.info("💡 **Σημείωση:** Στα Open Source ρομπότ, τα λάστιχα προστίθενται στα **Extra Υλικά** (κάτω) και όχι στο πεδίο «Ρόδες» μαζί με τις ζάντες.")
+        
         try:
             product_records = get_products_records()
         except Exception as e:
