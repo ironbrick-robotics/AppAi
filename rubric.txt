@@ -73,3 +73,37 @@ L2
 L3
 L4
 L5
+
+INTERPRETATION AND RESEARCH USE
+
+The L1-L5 label describes the cognitive/technical character of the
+CURRENT interaction. It is not a permanent student level and must not
+be interpreted as a ranking of the student's overall ability.
+
+The levels are categories of interaction complexity/type, not grades.
+
+A student may naturally produce interactions from different levels
+during the same activity.
+
+When an interaction contains characteristics of more than one level,
+classify according to the dominant purpose of the student's request.
+
+Use the following precedence when the dominant purpose is clear:
+
+- If the student is primarily asking to diagnose, explain, correct,
+  evaluate or improve an existing behavior/solution, classify L5,
+  even when parameters or multiple conditions are also mentioned.
+
+- Otherwise, if the request primarily combines multiple conditions,
+  states, sensor-action relationships or strategy logic, classify L4.
+
+- Otherwise, if the request primarily specifies technical parameters,
+  values, times, speeds or explicit sensor conditions, classify L3.
+
+- Otherwise, if the request asks for one basic robot action/function,
+  classify L2.
+
+- Otherwise, use L1 for broad conceptual/general questions.
+
+Do not infer a student's intelligence, competence or achievement from
+a single L1-L5 classification.
