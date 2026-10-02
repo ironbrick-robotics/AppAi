@@ -1323,7 +1323,7 @@ if st.session_state.user_role == "admin":
     elif st.session_state.admin_subpage == "robot_charges":
         st.subheader("🎒 Χρέώσεις Ρομπότ σε Μαθητές (Ταξίδια Διαγωνισμών)")
 
-        tab_new_charge, tab_active_charges = st.tabs(["📝 Νέα Χρέωση", "↩️ Επιστροφή / Ενεργές Χρεώσεις"])
+        tab_new_charge, tab_active_charges, tab_all_charges = st.tabs(["📝 Νέα Χρέωση", "↩️ Επιστροφή / Ενεργές Χρεώσεις", "📋 Λίστα Όλων των Χρεώσεων"])
 
         with tab_new_charge:
             try:
@@ -1342,7 +1342,6 @@ if st.session_state.user_role == "admin":
             else:
                 robot_map = {f"ID: {r.get('robot_id', r.get('ID',''))} | Ρομπότ: {r.get('robot_name', r.get('Robot Name',''))} (Χειριστής: {r.get('operator_name','')})": r for r in active_robots_build}
                 
-                # Προσθήκη επιλογής "-" στην αρχή
                 robot_options_list = ["-"] + list(robot_map.keys())
                 sel_rob_label = st.selectbox("Επιλέξτε Ρομπότ", options=robot_options_list)
                 
@@ -1427,6 +1426,29 @@ if st.session_state.user_role == "admin":
             except Exception as e:
                 st.error(f"Σφάλμα φόρτωσης χρεώσεων: {e}")
 
+        with tab_all_charges:
+            st.write("Πλήρης Λίστα Όλων των Χρεώσεων (Ιστορικό):")
+            try:
+                ch_records = get_charges_records()
+                if not ch_records:
+                    st.info("Δεν υπάρχουν καθόλου καταχωρημένες χρεώσεις στη βάση.")
+                else:
+                    charges_list_data = []
+                    for r in ch_records:
+                        charges_list_data.append({
+                            "ID": r.get("charge_id", r.get("ID", "")),
+                            "ΜΑΘΗΤΗΣ": r.get("student_name", r.get("Student", "")),
+                            "ΤΥΠΟΣ": r.get("item_type", r.get("Type", "")),
+                            "ΛΕΠΤΟΜΕΡΕΙΕΣ ΡΟΜΠΟΤ": r.get("item_details", r.get("Details", "")),
+                            "EXTRA ΥΛΙΚΑ": r.get("extra_items", r.get("Extra", "")),
+                            "ΗΜΕΡΟΜΗΝΙΑ": r.get("charge_date", r.get("Date", "")),
+                            "ΚΑΤΑΣΤΑΣΗ": r.get("status", r.get("Status", ""))
+                        })
+                    
+                    df_charges = pd.DataFrame(charges_list_data)
+                    st.dataframe(df_charges, use_container_width=True, hide_index=True)
+            except Exception as e:
+                st.error(f"Σφάλμα φόρτωσης λίστας χρεώσεων: {e}")
 
 
 # ==========================================
