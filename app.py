@@ -1321,7 +1321,7 @@ if st.session_state.user_role == "admin":
     # ΣΕΛΙΔΑ: ΧΡΕΩΣΕΙΣ ΡΟΜΠΟΤ - ΜΑΘΗΤΗ (db_charges)
     # ------------------------------------------
     elif st.session_state.admin_subpage == "robot_charges":
-        st.subheader("🎒 Χρέώσεις Εξοπλισμού & Ρομπότ σε Μαθητές (Ταξίδια Διαγωνισμών)")
+        st.subheader("🎒 Χρέώσεις Ρομπότ σε Μαθητές (Ταξίδια Διαγωνισμών)")
 
         tab_new_charge, tab_active_charges = st.tabs(["📝 Νέα Χρέωση", "↩️ Επιστροφή / Ενεργές Χρεώσεις"])
 
@@ -1333,27 +1333,22 @@ if st.session_state.user_role == "admin":
                 r_records, p_records = [], []
 
             student_name = st.text_input("Ονοματεπώνυμο Μαθητή / Υπευθύνου (π.χ. Κ. Αργύρης)")
-            charge_choice_type = st.radio("Τύπος Χρέωσης", ["Έτοιμο Ρομπότ", "Μεμονωμένος Εξοπλισμός / Υλικό"], horizontal=True)
 
             selected_item_details = ""
-            if charge_choice_type == "Έτοιμο Ρομπότ":
-                active_robots_build = [r for r in r_records if str(r.get("status", "Ενεργό")).strip() != "Διαλυμένο"]
-                if not active_robots_build:
-                    st.warning("Δεν υπάρχουν διαθέσιμα ενεργά ρομπότ.")
-                else:
-                    robot_map = {f"ID: {r.get('robot_id', r.get('ID',''))} | Ρομπότ: {r.get('robot_name', r.get('Robot Name',''))} (Χειριστής: {r.get('operator_name','')})": r for r in active_robots_build}
-                    sel_rob_label = st.selectbox("Επιλέξτε Ρομπότ", options=list(robot_map.keys()))
+            active_robots_build = [r for r in r_records if str(r.get("status", "Ενεργό")).strip() != "Διαλυμένο"]
+            
+            if not active_robots_build:
+                st.warning("Δεν υπάρχουν διαθέσιμα ενεργά ρομπότ.")
+            else:
+                robot_map = {f"ID: {r.get('robot_id', r.get('ID',''))} | Ρομπότ: {r.get('robot_name', r.get('Robot Name',''))} (Χειριστής: {r.get('operator_name','')})": r for r in active_robots_build}
+                
+                # Προσθήκη επιλογής "-" στην αρχή
+                robot_options_list = ["-"] + list(robot_map.keys())
+                sel_rob_label = st.selectbox("Επιλέξτε Ρομπότ", options=robot_options_list)
+                
+                if sel_rob_label != "-":
                     chosen_r = robot_map[sel_rob_label]
                     selected_item_details = f"Ρομπότ ID: {chosen_r.get('robot_id')} - Όνομα: {chosen_r.get('robot_name')} (Πλακέτα: {chosen_r.get('board')})"
-            else:
-                if not p_records:
-                    st.warning("Δεν βρέθηκαν προϊόντα στην αποθήκη.")
-                else:
-                    formatted_prods = [f"[{p.get('product_company','')} ] {p.get('product_name', p.get('Name',''))}" for p in p_records]
-                    formatted_prods = sorted(list(set(formatted_prods)))
-                    sel_p_label = st.selectbox("Επιλέξτε Προϊόν", options=formatted_prods)
-                    eq_qty = st.number_input("Ποσότητα", min_value=1, step=1, value=1)
-                    selected_item_details = f"Προϊόν: {sel_p_label} (x{eq_qty})"
 
             st.markdown("---")
             st.markdown("### 🔌 Επιπλέον Extra Υλικά (π.χ. Φορτιστής, Καλώδια, Laptop)")
@@ -1379,7 +1374,6 @@ if st.session_state.user_role == "admin":
                         ch_records = get_charges_records()
                         next_ch_id = len(ch_records) + 1 if ch_records else 1
 
-                        # Δημιουργία καθαρού string για τα extra items
                         if extra_selected:
                             extra_str = ", ".join([f"{k}:{v}" for k, v in extra_qtys_dict.items()])
                         else:
@@ -1387,11 +1381,10 @@ if st.session_state.user_role == "admin":
 
                         date_str = str(datetime.date.today())
 
-                        # Ακριβής σειρά 7 στηλών: charge_id, student_name, item_type, item_details, extra_items, charge_date, status
                         ch_sheet.append_row([
                             next_ch_id,
                             student_name.strip(),
-                            charge_choice_type,
+                            "Έτοιμο Ρομπότ",
                             selected_item_details,
                             extra_str,
                             date_str,
@@ -1401,7 +1394,7 @@ if st.session_state.user_role == "admin":
                     except Exception as e:
                         st.error(f"Σφάλμα αποθήκευσης χρέωσης: {e}")
                 else:
-                    st.warning("Συμπληρώστε το όνομα του μαθητή και επιλέξτε εξοπλισμό/ρομπότ.")
+                    st.warning("Συμπληρώστε το όνομα του μαθητή και επιλέξτε έγκυρο ρομπότ.")
 
         with tab_active_charges:
             st.write("Ενεργές Χρεώσεις προς Μαθητές (Εκκρεμεί Επιστροφή):")
@@ -1427,7 +1420,6 @@ if st.session_state.user_role == "admin":
                         try:
                             ch_sheet = get_charges_sheet()
                             row_to_up = chosen_charge["row_index"]
-                            # Στήλη 7: status
                             ch_sheet.update_cell(row_to_up, 7, "Επιστράφηκε")
                             st.success("Η επιστροφή καταχωρήθηκε επιτυχώς! Πατήστε «🔄 Ανανέωση Δεδομένων» στο πλαϊνό μενού.")
                         except Exception as e:
